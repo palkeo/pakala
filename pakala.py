@@ -1,4 +1,5 @@
 import argparse
+import codecs
 import datetime
 import logging
 import sys
@@ -77,7 +78,20 @@ if not args.contract_addr:
 
 logging.basicConfig(level=[logging.ERROR, logging.WARNING, logging.INFO, logging.DEBUG][args.v])
 
-code = w3.eth.getCode(args.contract_addr, block_identifier=args.block)
+if args.contract_addr == '-':
+    # Let's read the runtime bytecode from stdin
+    code = sys.stdin.read().strip('\n')
+    if not code.isalnum():
+        print("Runtime bytecode read from stdin needs to be hexadecimal.")
+        sys.exit()
+    code = codecs.decode(code, 'hex')
+    # Dummy address, dummy balance
+    args.contract_addr = '0xDEADBEEF00000000000000000000000000000000'
+    if not args.force_balance:
+        args.force_balance = Web3.toWei(1, 'ether')
+else:
+    code = w3.eth.getCode(args.contract_addr, block_identifier=args.block)
+
 balance = (args.force_balance
            or w3.eth.getBalance(args.contract_addr, block_identifier=args.block))
 
