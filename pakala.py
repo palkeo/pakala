@@ -88,14 +88,14 @@ if args.contract_addr == '-':
     # Dummy address, dummy balance
     args.contract_addr = '0xDEADBEEF00000000000000000000000000000000'
     if not args.force_balance:
-        args.force_balance = Web3.toWei(1, 'ether')
+        args.force_balance = Web3.toWei(1.337, 'ether')
 else:
     code = w3.eth.getCode(args.contract_addr, block_identifier=args.block)
 
 balance = (args.force_balance
            or w3.eth.getBalance(args.contract_addr, block_identifier=args.block))
 
-print("Analyzing contract %s with balance %f ether."
+print("Analyzing contract at %s with balance %f ether."
       % (args.contract_addr, Web3.fromWei(balance, 'ether')))
 
 if balance < args.min_to_receive:
@@ -122,7 +122,7 @@ print("Starting symbolic execution step...")
 s = sm.SymbolicMachine(e)
 s.execute(timeout_sec=args.exec_timeout)
 
-print("Symbolic execution phase finished with coverage %i%%."
+print("Symbolic execution finished with coverage %i%%."
       % int(s.get_coverage() * 100))
 print("Outcomes: %i interesting. %i total and %i partial outcomes."
       % (sum(int(o.is_interesting()) for o in s.outcomes),

@@ -54,7 +54,7 @@ class TestSymbolicMachine(unittest.TestCase):
         self.assertGreater(len(self.sm.branch_queue), 3)
 
     def test_execute(self):
-        self.sm.execute()
+        self.sm.execute(timeout_sec=10)
 
     def test_get_coverage(self):
         # Just test that it seems to work

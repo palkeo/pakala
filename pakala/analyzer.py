@@ -27,6 +27,8 @@ class BaseAnalyzer(object):
         self.storage_cache = {}
 
     def _read_storage(self, state, key):
+        # TODO: We do an approximation here: if it cannot be computed or it can
+        # be multiple things, we assume the initial storage is 0...
         logger.debug("Reading storage %r" % key)
         try:
             keys = state.solver.eval(key, 2)

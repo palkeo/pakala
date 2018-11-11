@@ -63,7 +63,7 @@ class TestCheckStates(unittest.TestCase):
             max_wei_to_send=Web3.toWei(10, 'ether'),
             min_wei_to_receive=Web3.toWei(1, 'milliether'))
         self.analyzer.storage_cache = FakeStorage(mock_storage or {})
-        return self.analyzer.check_states(states)
+        return self.analyzer.check_states(states, timeout=0, max_depth=4)
 
     def get_call(self, value, to=None):
         if to is None:
@@ -98,10 +98,9 @@ class TestCheckStates(unittest.TestCase):
 
         state_suicide = state.copy()
         state_suicide.suicide_to = self.env.calldata.read(4, 32)
-        state_suicide.storage_read = {utils.bvv(0):
-                                      self.env.calldata.read(4, 32)}
-        state_suicide.solver.add(
-            self.env.calldata.read(4, 32) == state.env.caller)
+        storage_0 = claripy.BVS('storage[0]', 256)
+        state_suicide.storage_read = {utils.bvv(0): storage_0}
+        state_suicide.solver.add(storage_0 == 0xDEADBEEF0101)
 
         storage = {0: 0xBAD1DEA}
         self.assertTrue(self.check_states([state_write, state_suicide],
@@ -110,24 +109,91 @@ class TestCheckStates(unittest.TestCase):
                          mock_storage=storage))
         self.assertFalse(self.check_states([state_write]))
 
+    def test_sha3_key(self):
+        """Exercise solidity-like mappings, with the key being a sha3."""
+        state = State(self.env)
+
+        state_write = state.copy()
+        # Arbitrary write input[1], at SHA3(input[0])
+        state_write.storage_written = {
+            self.env.calldata.read(4, 32).SHA3(): self.env.calldata.read(36, 32)}
+
+        # Needs that: storage[SHA3(input[0])] == 43, made possible by the previous call
+        state_suicide = state.copy()
+        state_suicide.suicide_to = self.env.calldata.read(36, 32)
+        storage_input = claripy.BVS('storage[SHA3(input)]', 256)
+        state_suicide.storage_read = {
+            self.env.calldata.read(4, 32).SHA3(): storage_input}
+        state_suicide.solver.add(storage_input == 0xDEADBEEF101010)
+
+        self.assertTrue(self.check_states([state_write, state_suicide]))
+        self.assertFalse(self.check_states([state_suicide]))
+        self.assertFalse(self.check_states([state_write]))
+
+    def test_sha3_value(self):
+        """Exercise comparison of two SHA3 (as values)."""
+        state = State(self.env)
+
+        state_write = state.copy()
+        state_write.storage_written = {
+            utils.bvv(0): self.env.calldata.read(4, 32).SHA3()}
+
+        state_suicide = state.copy()
+        state_suicide.suicide_to = self.env.calldata.read(36, 32)
+        storage_input = claripy.BVS('storage[0]', 256)
+        state_suicide.storage_read = {utils.bvv(0): storage_input}
+        state_suicide.solver.add(
+                storage_input == self.env.calldata.read(4, 32).SHA3())
+
+        storage = {0: 0}
+        self.assertTrue(self.check_states([state_write, state_suicide],
+                        mock_storage=storage))
+        self.assertFalse(self.check_states([state_suicide],
+                         mock_storage=storage))
+        self.assertFalse(self.check_states([state_write],
+                         mock_storage=storage))
+
+    def test_sha3_value2(self):
+        """Same as above, but we need to pass she computed SHA3."""
+        state = State(self.env)
+
+        state_write = state.copy()
+        state_write.storage_written = {
+            utils.bvv(0): self.env.calldata.read(4, 32).SHA3()}
+
+        state_suicide = state.copy()
+        state_suicide.suicide_to = self.env.calldata.read(36, 32)
+        storage_input = claripy.BVS('storage[0]', 256)
+        state_suicide.storage_read = {utils.bvv(0): storage_input}
+        state_suicide.solver.add(storage_input == self.env.calldata.read(4, 32))
+        state_suicide.solver.add(storage_input != 0)
+
+        storage = {0: 0}
+        self.assertTrue(self.check_states([state_write, state_suicide],
+                        mock_storage=storage))
+        self.assertFalse(self.check_states([state_suicide],
+                         mock_storage=storage))
+        self.assertFalse(self.check_states([state_write],
+                         mock_storage=storage))
+
     def test_write_write_and_suicide(self):
         state = State(self.env)
         # Anybody can set owner
         state_write1 = state.copy()
-        state_write1.storage_written = {utils.bvv(0):
-                                       self.env.calldata.read(4, 32)}
+        state_write1.storage_written = {
+                utils.bvv(0): self.env.calldata.read(4, 32)}
 
         # Onlyowner: set a magic constant allowing the suicide bug
         state_write2 = state.copy()
-        read_0 = claripy.BVS('read_0', 256)
+        read_0 = claripy.BVS('storage[0]', 256)
         state_write2.storage_read = {utils.bvv(0): read_0}
-        state_write2.storage_written = {self.env.caller.SHA3():
-                                        self.env.calldata.read(4, 32)}
+        state_write2.storage_written = {
+                self.env.caller.SHA3(): self.env.calldata.read(4, 32)}
         state_write2.solver.add(read_0 == self.env.caller)
 
         # Suicide, when owner and magic constant set
         state_suicide = state.copy()
-        read_0 = claripy.BVS('read_0', 256)
+        read_0 = claripy.BVS('storage[0]', 256)
         read_sha_caller = claripy.BVS('read_sha_caller', 256)
         state_suicide.storage_read = {
             utils.bvv(0): read_0,

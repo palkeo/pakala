@@ -44,8 +44,9 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
 
     def _search_path(self, composite_state, path):
         logger.debug("Search path: %s", path)
+        logger.debug("Old composite state: %s", composite_state)
         composite_state = self._append_state(composite_state, path[-1])
-        logger.debug("Composite state: %s", composite_state)
+        logger.debug("After appending last state, new composite state: %s", composite_state)
 
         # If we already encountered the same composite state with some other
         # path...
@@ -83,6 +84,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                     composite_state.storage_written[key] == state.storage_read[key])
             elif any((key == k).is_true() for k in composite_state.storage_read.keys()):
                 # If what we read is already read by the composite state
+                # TODO: is that needed?
                 composite_state.solver.add(
                     composite_state.storage_read[key] == state.storage_read[key])
             else:
