@@ -29,11 +29,13 @@ class BaseAnalyzer(object):
     def _read_storage(self, state, key):
         # TODO: We do an approximation here: if it cannot be computed or it can
         # be multiple things, we assume the initial storage is 0...
+        # Instead we could use a cascade of claripy.If(key, value, claripy.If(...
+        # reflecting the actual storage (if there are not too many keys in storage.
         logger.debug("Reading storage %r" % key)
         try:
             keys = state.solver.eval(key, 2)
             if len(keys) > 1:
-                logger.info("Multiple keys possible for key %r", key)
+                logger.info("Multiple values possible for key %r", key)
                 return utils.bvv(0)
             assert len(keys) == 1
             key = keys[0]

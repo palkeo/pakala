@@ -13,9 +13,7 @@ import claripy
 
 from pakala import utils
 from pakala.state import State
-from pakala.claripy_sha3 import sha3_monkeypatch
-
-sha3_monkeypatch()
+from pakala.claripy_sha3 import Sha3
 
 logger = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
@@ -382,7 +380,7 @@ class SymbolicMachine:
             elif op == 'SHA3':
                 start, length = solution(state.stack_pop()), solution(state.stack_pop())
                 memory = state.memory.read(start, length)
-                state.stack_push(memory.SHA3())
+                state.stack_push(Sha3(memory))
             elif op == 'STOP':
                 return True
             elif op == 'RETURN':
@@ -445,10 +443,10 @@ class SymbolicMachine:
                 key = state.stack_pop()
                 if key in state.storage_written:
                     state.stack_push(state.storage_written[key])
-                else:
-                    if key not in state.storage_read:
-                        state.storage_read[key] = claripy.BVS('storage[%s]' % key, 256)
+                elif key in state.storage_read:
                     state.stack_push(state.storage_read[key])
+                else:
+                    state.storage_read[key] = claripy.BVS('storage[%s]' % key, 256)
             elif op == 'SSTORE':
                 key = state.stack_pop()
                 value = state.stack_pop()
@@ -495,7 +493,8 @@ class SymbolicMachine:
 
         Returns the process time it took to execute."""
 
-        assert not self.outcomes, "Already executed."
+        if self.outcomes:
+            raise RuntimeError("Already executed.")
 
         time_start = time.process_time()
 

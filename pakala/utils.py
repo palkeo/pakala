@@ -11,6 +11,8 @@ from ethereum import utils
 from ethereum import vm
 logging._loggerClass = logging.Logger  # Counter-hack to fix the logging monkey-patch.
 
+from pakala import claripy_sha3
+
 
 ADDR_MASK = 0xffffffffffffffffffffffffffffffffffffffff
 
@@ -33,7 +35,7 @@ def bvv(v):
 
 
 def get_solver():
-    return claripy.SolverComposite()
+    return claripy_sha3.Solver()
 
 
 def int_to_bytes(v, size):

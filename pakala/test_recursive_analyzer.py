@@ -9,11 +9,10 @@ from pakala.analyzer import FakeStorage
 from pakala.env import Env
 from pakala.state import State
 from pakala import utils
-from pakala import claripy_sha3
+from pakala.claripy_sha3 import Sha3
 
 from web3 import Web3
 
-claripy_sha3.sha3_monkeypatch()
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('claripy').setLevel(logging.ERROR)
@@ -116,34 +115,34 @@ class TestCheckStates(unittest.TestCase):
         state_write = state.copy()
         # Arbitrary write input[1], at SHA3(input[0])
         state_write.storage_written = {
-            self.env.calldata.read(4, 32).SHA3(): self.env.calldata.read(36, 32)}
+            Sha3(self.env.calldata.read(4, 32)): self.env.calldata.read(36, 32)}
 
         # Needs that: storage[SHA3(input[0])] == 43, made possible by the previous call
         state_suicide = state.copy()
         state_suicide.suicide_to = self.env.calldata.read(36, 32)
         storage_input = claripy.BVS('storage[SHA3(input)]', 256)
         state_suicide.storage_read = {
-            self.env.calldata.read(4, 32).SHA3(): storage_input}
+            Sha3(self.env.calldata.read(4, 32)): storage_input}
         state_suicide.solver.add(storage_input == 0xDEADBEEF101010)
 
         self.assertTrue(self.check_states([state_write, state_suicide]))
         self.assertFalse(self.check_states([state_suicide]))
         self.assertFalse(self.check_states([state_write]))
 
-    def test_sha3_value(self):
+    def test_sha3_value1(self):
         """Exercise comparison of two SHA3 (as values)."""
         state = State(self.env)
 
         state_write = state.copy()
         state_write.storage_written = {
-            utils.bvv(0): self.env.calldata.read(4, 32).SHA3()}
+            utils.bvv(0): Sha3(self.env.calldata.read(4, 32))}
 
         state_suicide = state.copy()
         state_suicide.suicide_to = self.env.calldata.read(36, 32)
         storage_input = claripy.BVS('storage[0]', 256)
         state_suicide.storage_read = {utils.bvv(0): storage_input}
         state_suicide.solver.add(
-                storage_input == self.env.calldata.read(4, 32).SHA3())
+                storage_input == Sha3(self.env.calldata.read(4, 32)))
 
         storage = {0: 0}
         self.assertTrue(self.check_states([state_write, state_suicide],
@@ -154,12 +153,12 @@ class TestCheckStates(unittest.TestCase):
                          mock_storage=storage))
 
     def test_sha3_value2(self):
-        """Same as above, but we need to pass she computed SHA3."""
+        """Same as above, but we need to pass the computed SHA3."""
         state = State(self.env)
 
         state_write = state.copy()
         state_write.storage_written = {
-            utils.bvv(0): self.env.calldata.read(4, 32).SHA3()}
+            utils.bvv(0): Sha3(self.env.calldata.read(4, 32))}
 
         state_suicide = state.copy()
         state_suicide.suicide_to = self.env.calldata.read(36, 32)
@@ -183,29 +182,30 @@ class TestCheckStates(unittest.TestCase):
         state_write1.storage_written = {
                 utils.bvv(0): self.env.calldata.read(4, 32)}
 
-        # Onlyowner: set a magic constant allowing the suicide bug
+        # Onlyowner: set a magic constant allowing the suicide bug, at an
+        # user-controlled storage key.
         state_write2 = state.copy()
         read_0 = claripy.BVS('storage[0]', 256)
         state_write2.storage_read = {utils.bvv(0): read_0}
         state_write2.storage_written = {
-                self.env.caller.SHA3(): self.env.calldata.read(4, 32)}
+                self.env.calldata.read(36, 32): self.env.calldata.read(4, 32)}
         state_write2.solver.add(read_0 == self.env.caller)
 
         # Suicide, when owner and magic constant set
         state_suicide = state.copy()
         read_0 = claripy.BVS('storage[0]', 256)
-        read_sha_caller = claripy.BVS('read_sha_caller', 256)
+        read_40 = claripy.BVS('storage[4]', 256)
         state_suicide.storage_read = {
             utils.bvv(0): read_0,
-            self.env.caller.SHA3(): read_sha_caller}
+            utils.bvv(40): read_40}
         state_suicide.solver.add(self.env.caller == read_0)
-        state_suicide.solver.add(read_sha_caller == 1337)
+        state_suicide.solver.add(read_40 == 1337)
         state_suicide.suicide_to = self.env.caller
 
         states = [state_write1, state_write2, state_suicide]
         random.shuffle(states)
 
-        storage = {0: 123456789}
+        storage = {0: 123456789, 40: 387642}
         for s in itertools.combinations(states, 2):
             self.assertFalse(self.check_states(s, mock_storage=storage))
         self.assertTrue(self.check_states(states, mock_storage=storage))

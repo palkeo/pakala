@@ -3,6 +3,7 @@ import logging
 import functools
 import datetime
 import time
+import itertools
 
 import claripy
 
@@ -44,9 +45,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
 
     def _search_path(self, composite_state, path):
         logger.debug("Search path: %s", path)
-        logger.debug("Old composite state: %s", composite_state)
-        composite_state = self._append_state(composite_state, path[-1])
-        logger.debug("After appending last state, new composite state: %s", composite_state)
+        logger.debug("Composite state: %s", composite_state)
 
         # If we already encountered the same composite state with some other
         # path...
@@ -54,9 +53,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             return
         self.state_done.add(hash(composite_state))
 
-        logger.debug("Satisfiability check...")
-        if not composite_state.solver.satisfiable():
-            return
+        assert composite_state.solver.satisfiable()
 
         logger.debug("Check for bugs in composite state...")
         if self.check_state(composite_state, path=path):
@@ -75,37 +72,66 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 (composite_state.copy(), path + [reference_state]))
 
     def _append_state(self, composite_state, state):
+        logging.debug("_append_state: appending state %s to composite state %s",
+                      state, composite_state)
         assert composite_state.suicide_to is None
-
-        for key, val in state.storage_read.items():
-            if any((key == k).is_true() for k in composite_state.storage_written.keys()):
-                # What we read was written
-                composite_state.solver.add(
-                    composite_state.storage_written[key] == state.storage_read[key])
-            elif any((key == k).is_true() for k in composite_state.storage_read.keys()):
-                # If what we read is already read by the composite state
-                # TODO: is that needed?
-                composite_state.solver.add(
-                    composite_state.storage_read[key] == state.storage_read[key])
-            else:
-                # We read something else
-                composite_state.storage_read[key] = val
-                composite_state.solver.add(
-                    state.storage_read[key] == self._read_storage(state, key))
-
-        for key, val in state.storage_written.items():
-            composite_state.storage_written[key] = val
-
-        for call in state.calls:
-            composite_state.calls.append(call)
 
         for constraint in state.solver.constraints:
             composite_state.solver.add(constraint)
 
+        if not composite_state.solver.satisfiable():
+            return []
+
+        for call in state.calls:
+            composite_state.calls.append(call)
+
         if state.suicide_to is not None:
             composite_state.suicide_to = state.suicide_to
 
-        return composite_state
+        # Resolve read/write
+
+        def apply_read(r_key, r_val, composite_state):
+            """Apply a read operation with (key, value) to the state."""
+            assert composite_state.solver.satisfiable()
+            composite_states_next = []
+
+            # Here we consider the cases where it's possible to read something
+            # we previously wrote to.
+            not_overwritten_c = []
+            for w_key, w_val in composite_state.storage_written.items():
+                c_key = r_key == w_key
+                c_val = r_val == w_val
+                if composite_state.solver.satisfiable(extra_constraints=[c_key, c_val]):
+                    not_overwritten_c.append(r_key != w_key)
+                    cs = composite_state.copy()
+                    cs.solver.add(c_key)
+                    cs.solver.add(c_val)
+                    assert cs.solver.satisfiable()
+                    composite_states_next.append(cs)
+                    logging.debug("Found key read %s, corresponding to key written %s", r_key, w_key)
+
+            # Is it not something we previously wrote to?
+            for c in not_overwritten_c:
+                composite_state.solver.add(c)
+            composite_state.solver.add(
+                state.storage_read[r_key] == self._read_storage(state, r_key))
+            if composite_state.solver.satisfiable():
+                composite_states_next.append(composite_state)
+
+            return composite_states_next
+
+        composite_states = [composite_state]
+        for r_key, r_val in state.storage_read.items():
+            composite_states = list(itertools.chain.from_iterable(
+                apply_read(r_key, r_val, composite_state)
+                for composite_state in composite_states))
+
+        for composite_state in composite_states:
+            for key, val in state.storage_written.items():
+                composite_state.storage_written[key] = val
+
+        logging.debug("_append_state: found states: %s", composite_states)
+        return composite_states
 
     def check_states(self, states, timeout, max_depth):
         states = [state for state in states if state.is_interesting()]
@@ -125,22 +151,25 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
 
         # Add them to the paths to explore
         for state in self.reference_states:
+            assert state.solver.satisfiable()
             self.path_queue.append(
                 (State(self.reference_states[0].env), [state]))
 
         # Recursive exploration
         time_start = time.process_time()
         while self.path_queue:
-            composite_state, path = self.path_queue.popleft()
+            initial_composite_state, path = self.path_queue.popleft()
+
             #try:
-            if self._search_path(composite_state, path) is not None:
-                return composite_state, path
-            # TODO: Maybe get rid of that? If we are out of memory is it worth
-            # trying, really?
-            # TODO: Claripy is raising normal z3 errors...
+            new_composite_states = self._append_state(
+                    initial_composite_state, path[-1])
             #except claripy.errors.ClaripyError as error:
-            #except Exception as error:
-            #    logger.warning("Claripy error in search_path: %s", error)
+            #    logger.warning("Claripy error in _append_state: %s", error)
+            #    continue
+
+            for composite_state in new_composite_states:
+                if self._search_path(composite_state, path) is not None:
+                    return composite_state, path
 
             if timeout and time.process_time() - time_start > timeout:
                 logger.debug("Timeout at depth %i, stopping.", len(path))
