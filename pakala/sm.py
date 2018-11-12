@@ -443,10 +443,10 @@ class SymbolicMachine:
                 key = state.stack_pop()
                 if key in state.storage_written:
                     state.stack_push(state.storage_written[key])
-                elif key in state.storage_read:
-                    state.stack_push(state.storage_read[key])
                 else:
-                    state.storage_read[key] = claripy.BVS('storage[%s]' % key, 256)
+                    if key not in state.storage_read:
+                        state.storage_read[key] = claripy.BVS('storage[%s]' % key, 256)
+                    state.stack_push(state.storage_read[key])
             elif op == 'SSTORE':
                 key = state.stack_pop()
                 value = state.stack_pop()
