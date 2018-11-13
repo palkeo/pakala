@@ -116,14 +116,15 @@ class Sha3Mixin(object):
 
     def _hash_constraints(self, extra_constraints,
                           hashes, pairs_done=None):
-        if pairs_done is None:
-            pairs_done = set()
-
         extra_constraints = [
                 _symbolize_hashes(c, hashes) for c in extra_constraints]
 
-        if not super().satisfiable(extra_constraints=extra_constraints):
-            return extra_constraints
+        # Fast-path if no hashes, or if not satisfiable.
+        if not hashes or not super().satisfiable(extra_constraints=extra_constraints):
+            return tuple(extra_constraints)
+
+        if pairs_done is None:
+            pairs_done = set()
 
         new_extra_constraints = []
         for (in1, s1), (in2, s2) in itertools.combinations(hashes.items(), 2):
