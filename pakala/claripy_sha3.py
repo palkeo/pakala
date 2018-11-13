@@ -11,15 +11,55 @@ import claripy
 
 logger = logging.getLogger(__name__)
 
+# TODO: we could keep the resulting constraints in cache or something, so it's
+# very fast when we don't use the solver with non-empty extra_constraint.
 
 def Sha3(x):
     return bv.BV('SHA3', [x], length=256)
 
 
+def _symbolize_hashes(ast, hashes):
+    if not isinstance(ast, claripy.ast.base.Base):
+        return ast
+
+    # Replace SHA3 with a BVS
+    if ast.op == 'SHA3':
+        hash_input, = ast.args
+        hash_input = _symbolize_hashes(hash_input, hashes)
+        try:
+            return hashes[hash_input]
+        except KeyError:
+            hash_symbol = claripy.BVS('SHA3', 256)
+            hashes[hash_input] = hash_symbol
+            logger.debug("Registering new hash: %s(%s)",
+                         hash_symbol, hash_input)
+            return hash_symbol
+
+    # Recursively apply to children
+    args = [_symbolize_hashes(child, hashes) for child in ast.args]
+    return ast.swap_args(args)
+
+
+def _no_sha3_symbol(ast):
+    if not isinstance(ast, claripy.ast.base.Base):
+        return True
+    elif isinstance(ast, claripy.ast.base.BV):
+        try:
+            return not ast.args[0].startswith('SHA3')
+        except AttributeError:
+            return True
+    else:
+        return all(_no_sha3_symbol(child) for child in ast.args)
+
+
+def _no_sha3_symbols(constraints):
+    return all(_no_sha3_symbol(ast) for ast in constraints)
+
+
 class Sha3Mixin(object):
     def __init__(self, *args, **kwargs):
-        self.hashes = {} # Mapping hash input to the symbol
         super().__init__(*args, **kwargs)
+        self.hashes = {}  # Mapping hash input to the symbol
 
     def _copy(self, c):
         super()._copy(c)
@@ -29,118 +69,124 @@ class Sha3Mixin(object):
         super()._blank_copy(c)
         c.hashes = {}
 
-    def symbolize_hashes(self, ast):
-        if not isinstance(ast, claripy.ast.base.Base):
-            return [], ast
-
-        # Replace SHA3 with a BVS
-        if ast.op == 'SHA3':
-            hash_input, = ast.args
-            try:
-                return [hash_input], self.hashes[hash_input]
-            except KeyError:
-                hash_symbol = claripy.BVS('SHA3', 256)
-                self.hashes[hash_input] = hash_symbol
-                return [hash_input], hash_symbol
-
-        # Recursively apply to children
-        hash_inputs = []
-        args = []
-        for child in ast.args:
-            hash_input, child = self.symbolize_hashes(child)
-            hash_inputs += hash_input
-            args.append(child)
-
-        return hash_inputs, ast.swap_args(args)
-
-    def _expand_constraints(self, constraints):
-        expanded = []
-        for constraint in constraints:
-            hash_inputs, constraint = self.symbolize_hashes(constraint)
-            expanded.append(constraint)
-
-            if not hash_inputs:
-                pass
-            elif len(hash_inputs) == 2:
-                in1, in2 = hash_inputs
-                s1, s2 = self.hashes[in1], self.hashes[in2]
-                # The beauty here is that it's recursive, so sha3(sha3(...))
-                # will also work.
-                expanded += self._expand_constraints(
-                    [claripy.If(in1 == in2, s1 == s2, False)])
-            elif len(hash_inputs) == 1:
-                # TODO: get a concrete input value, and compute its hash...
-                in1, = hash_inputs
-                expanded.append(self.hashes[in1] == random.randint(0, 2**256 - 1))
-            else:
-                #expanded.append(False)
-                #logging.warning("Only two hashes supported now. Constraint was '%r'" % constraint)
-                raise ValueError("Only two hashes supported now. Constraint was '%r'" % constraint)
-        return expanded
-
     def add(self, constraints, **kwargs):
         if isinstance(constraints, claripy.ast.base.Base):
             constraints = [constraints]
-
-        expanded_constraints = self._expand_constraints(constraints)
-        return super().add(expanded_constraints, **kwargs)
-
-    def _expand_extra_constraints(self, extra_constraints):
-        saved_hashes = self.hashes.copy()
-        try:
-            expanded_constraints = self._expand_constraints(extra_constraints)
-        finally:
-            self.hashes = saved_hashes
-        return tuple(expanded_constraints)
+        assert _no_sha3_symbols(constraints)
+        constraints = [_symbolize_hashes(c, self.hashes) for c in constraints]
+        return super().add(constraints, **kwargs)
 
     def satisfiable(self, extra_constraints=(), **kwargs):
-        extra_constraints = self._expand_extra_constraints(extra_constraints)
+        # TODO: Put the assertion here. Problem is that this is called from
+        # inside claripy as well.
+        #assert _no_sha3_symbols(extra_constraints)
+        extra_constraints = self._hash_constraints(
+                extra_constraints, hashes=self.hashes.copy())
         return super().satisfiable(extra_constraints=extra_constraints)
 
     def eval(self, e, n, extra_constraints=(), **kwargs):
-        extra_constraints = self._expand_extra_constraints(extra_constraints)
+        assert _no_sha3_symbol(e)
+        assert _no_sha3_symbols(extra_constraints)
+        hashes = self.hashes.copy()
+        e = _symbolize_hashes(e, hashes)
+        extra_constraints = self._hash_constraints(
+            extra_constraints, hashes=hashes)
         return super().eval(e, n, extra_constraints=extra_constraints)
 
     def batch_eval(self, e, n, extra_constraints=(), **kwargs):
         raise NotImplementedError()
 
     def max(self, e, extra_constraints=(), **kwargs):
-        extra_constraints = self._expand_extra_constraints(extra_constraints)
+        assert _no_sha3_symbol(e)
+        assert _no_sha3_symbols(extra_constraints)
+        hashes = self.hashes.copy()
+        e = _symbolize_hashes(e, hashes)
+        extra_constraints = self._hash_constraints(
+            extra_constraints, hashes=hashes)
         return super().max(e, extra_constraints=extra_constraints)
 
     def min(self, e, extra_constraints=(), **kwargs):
-        extra_constraints = self._expand_extra_constraints(extra_constraints)
+        assert _no_sha3_symbol(e)
+        assert _no_sha3_symbols(extra_constraints)
+        hashes = self.hashes.copy()
+        e = _symbolize_hashes(e, hashes)
+        extra_constraints = self._hash_constraints(
+            extra_constraints, hashes=hashes)
         return super().min(e, extra_constraints=extra_constraints)
 
+    def _hash_constraints(self, extra_constraints,
+                          hashes, pairs_done=None):
+        if pairs_done is None:
+            pairs_done = set()
 
-"""
-    def update_hash_constraints(self):
-        for in1, s1 in self.hashes.items():
-            if s1 not in self.input_constrained:
-                self.input_constrained[s1] = False
-                super().add(s1 == 0)
-                super().add(s1 != 0)
+        extra_constraints = [
+                _symbolize_hashes(c, hashes) for c in extra_constraints]
 
-        def mark_constrained(s):
-            if not self.input_constrained[s]:
-                self.input_constrained[s] = True
-                super().remove(s == 0)
-                super().remove(s != 0)
+        if not super().satisfiable(extra_constraints=extra_constraints):
+            return extra_constraints
 
-        for (in1, s1), (in2, s2) in itertools.combinations(self.hashes.items(), 2):
-            if self.input_constrained[s1] and self.input_constrained[s2]:
+        new_extra_constraints = []
+        for (in1, s1), (in2, s2) in itertools.combinations(hashes.items(), 2):
+            if (s1, s2) in pairs_done:
                 continue
             # Do s1 needs to be equal to s2 ? Then in1 needs to be equal to in2
-            if not self.satisfiable(extra_constraints=[s1 != s2]):
-                mark_constrained(s1)
-                mark_constrained(s2)
-                self.add(in1 == in2)
+            if not super().satisfiable(extra_constraints=extra_constraints + [s1 != s2]):
+                new_extra_constraints.append(in1 == in2)
+                logger.debug("Added constraint: %s", in1 == in2)
+                pairs_done.add((s1, s2))
+                pairs_done.add((s2, s1))
             # Do s1 needs to be != to s2 ? Then in1 needs to be != to in2
-            elif not self.satisfiable(extra_constraints=[s1 == s2]):
-                mark_constrained(s1)
-                mark_constrained(s2)
-                self.add(in1 != in2)
-"""
+            elif not super().satisfiable(extra_constraints=extra_constraints + [s1 == s2]):
+                new_extra_constraints.append(in1 != in2)
+                logger.debug("Added constraint: %s", in1 != in2)
+                pairs_done.add((s1, s2))
+                pairs_done.add((s2, s1))
+
+        if new_extra_constraints:
+            return self._hash_constraints(
+                extra_constraints + new_extra_constraints, hashes, pairs_done)
+
+        assert super().satisfiable(extra_constraints=extra_constraints)
+
+        for in1, s1 in hashes.items():
+            try:
+                sol1, = super().eval(in1, 1, extra_constraints=extra_constraints)
+            except claripy.errors.UnsatError:
+                break
+            extra_constraints.append(in1 == sol1)
+            # TODO: use actual hash value! Not this ugly thing.
+            random.seed(sol1)
+            extra_constraints.append(s1 == random.randint(0, 2**256 - 1))
+
+        return tuple(extra_constraints)
+
+    def replace(self, r):
+        # First replacement: apply r() everywhere.
+        self.constraints = [r(i) for i in self.constraints]
+        self.hashes = {r(k): r(v) for k, v in self.hashes.items()}
+        # Second one: change the hash symbols as well.
+        # Also needed in case we re-import constraints before the replacement:
+        # the input is different and we don't want the symbols to be the same.
+        new_hashes = {k: claripy.BVS('SHA3', 256)
+                      for k, v in self.hashes.items()}
+        for k in self.hashes:
+            r_from, r_to = self.hashes[k], new_hashes[k]
+            self.constraints = [i.replace(r_from, r_to)
+                                for i in self.constraints]
+        self.hashes = new_hashes
+
+        self.downsize()  # Half-assed attempt at clearing caches... TODO improve.
+
+    def merge(self, other):
+        for k, v in self.hashes.items():
+            # Make sure the symbols are distinct
+            assert all(v is not v2 for v2 in other.hashes.values())
+            # TODO: Support identical inputs. We just have to make the symbols identical.
+            assert all(k is not k2 for k2 in other.hashes.keys())
+        self.constraints += other.constraints
+        self.hashes.update(other.hashes)
+
+        self.downsize()  # Half-assed attempt at clearing caches... TODO improve.
 
 
 class Solver(

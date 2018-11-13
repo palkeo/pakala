@@ -76,8 +76,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                       state, composite_state)
         assert composite_state.suicide_to is None
 
-        for constraint in state.solver.constraints:
-            composite_state.solver.add(constraint)
+        composite_state.solver.merge(state.solver)
 
         if not composite_state.solver.satisfiable():
             return []

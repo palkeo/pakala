@@ -125,8 +125,11 @@ class TestCheckStates(unittest.TestCase):
             Sha3(self.env.calldata.read(4, 32)): storage_input}
         state_suicide.solver.add(storage_input == 0xDEADBEEF101010)
 
-        self.assertTrue(self.check_states([state_write, state_suicide]))
-        self.assertFalse(self.check_states([state_suicide]))
+        storage = {55186156870478567193644641351382124067713781048612400765092754877653207859685: 0}
+        self.assertTrue(self.check_states([state_write, state_suicide],
+                        mock_storage=storage))
+        self.assertFalse(self.check_states([state_suicide],
+                        mock_storage=storage))
         self.assertFalse(self.check_states([state_write]))
 
     def test_sha3_value1(self):

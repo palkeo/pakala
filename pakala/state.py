@@ -67,10 +67,12 @@ class State(object):
         self.calls = [[r(i) for i in call] for call in self.calls]
         self.suicide_to = None if self.suicide_to is None else r(self.suicide_to)
 
-        constraints = [r(i) for i in self.solver.constraints]
-        self.solver = utils.get_solver()
-        for c in constraints:
-            self.solver.add(c)
+        # TODO: Do something cleaner! This work only with our custom solver mixin.
+        self.solver.replace(r)
+        #constraints = [r(i) for i in self.solver.constraints]
+        #self.solver = utils.get_solver()
+        #for c in constraints:
+        #    self.solver.add(c)
 
     def __hash__(self):
         l = [hash(self.env), hash(self.pc), hash(self.memory),
