@@ -142,7 +142,7 @@ class TestSha3Support(unittest.TestCase):
         self.assertFalse(new_state.solver.satisfiable(extra_constraints=[new_env.value == 5]))
         self.assertFalse(new_state.solver.satisfiable(extra_constraints=[old_env.value == 5]))
 
-        old_state.solver.merge(new_state.solver)
+        old_state.solver = old_state.solver.combine([new_state.solver])
         self.assertTrue(new_state.solver.satisfiable())
         self.assertEqual(len(old_state.solver.constraints), 3)
         self.assertEqual(len(old_state.solver.hashes), 2)

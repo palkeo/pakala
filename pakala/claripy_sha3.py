@@ -72,7 +72,9 @@ class Sha3Mixin(object):
     def add(self, constraints, **kwargs):
         if isinstance(constraints, claripy.ast.base.Base):
             constraints = [constraints]
-        assert _no_sha3_symbols(constraints)
+        # TODO: Put the assertion here. Problem is that this is called from
+        # inside claripy as well.
+        #assert _no_sha3_symbols(constraints)
         constraints = [_symbolize_hashes(c, self.hashes) for c in constraints]
         return super().add(constraints, **kwargs)
 
@@ -178,16 +180,19 @@ class Sha3Mixin(object):
 
         self.downsize()  # Half-assed attempt at clearing caches... TODO improve.
 
-    def merge(self, other):
-        for k, v in self.hashes.items():
-            # Make sure the symbols are distinct
-            assert all(v is not v2 for v2 in other.hashes.values())
-            # TODO: Support identical inputs. We just have to make the symbols identical.
-            assert all(k is not k2 for k2 in other.hashes.keys())
-        self.constraints += other.constraints
-        self.hashes.update(other.hashes)
+    def combine(self, others):
+        combined = super().combine(others)
+        combined.hashes.update(self.hashes)
 
-        self.downsize()  # Half-assed attempt at clearing caches... TODO improve.
+        for other in others:
+            for k, v in self.hashes.items():
+                # Make sure the symbols are distinct
+                assert all(v is not v2 for v2 in other.hashes.values())
+                # TODO: Support identical inputs. We just have to make the symbols identical.
+                assert all(k is not k2 for k2 in other.hashes.keys())
+            combined.hashes.update(other.hashes)
+
+        return combined
 
 
 class Solver(
