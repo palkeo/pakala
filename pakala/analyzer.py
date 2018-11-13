@@ -40,7 +40,7 @@ class BaseAnalyzer(object):
             assert len(keys) == 1
             key = keys[0]
             assert isinstance(key, numbers.Number)
-        except (claripy.errors.BackendError, claripy.errors.ClaripyFrontendError) as e:
+        except claripy.errors.ClaripyError as e:
             # Should not be too bad, because for the same key we will reuse the
             # same cache.
             logger.debug(

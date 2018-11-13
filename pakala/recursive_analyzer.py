@@ -72,8 +72,8 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 (composite_state.copy(), path + [reference_state]))
 
     def _append_state(self, composite_state, state):
-        logging.debug("_append_state: appending state %s to composite state %s",
-                      state, composite_state)
+        logger.debug("_append_state: appending state %s to composite state %s",
+                     state, composite_state)
         assert composite_state.suicide_to is None
 
         composite_state.solver.merge(state.solver)
@@ -107,7 +107,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                     cs.solver.add(c_val)
                     assert cs.solver.satisfiable()
                     composite_states_next.append(cs)
-                    logging.debug("Found key read %s, corresponding to key written %s", r_key, w_key)
+                    logger.debug("Found key read %s, corresponding to key written %s", r_key, w_key)
 
             # Is it not something we previously wrote to?
             for c in not_overwritten_c:
@@ -129,7 +129,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             for key, val in state.storage_written.items():
                 composite_state.storage_written[key] = val
 
-        logging.debug("_append_state: found states: %s", composite_states)
+        logger.debug("_append_state: found states: %s", composite_states)
         return composite_states
 
     def check_states(self, states, timeout, max_depth):
