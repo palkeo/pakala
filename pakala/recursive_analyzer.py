@@ -53,8 +53,6 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             return
         self.state_done.add(hash(composite_state))
 
-        assert composite_state.solver.satisfiable()
-
         logger.debug("Check for bugs in composite state...")
         if self.check_state(composite_state, path=path):
             return path
@@ -80,6 +78,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
 
         if not composite_state.solver.satisfiable():
             return []
+        assert state.solver.satisfiable()
 
         for call in state.calls:
             composite_state.calls.append(call)
@@ -91,21 +90,18 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
 
         def apply_read(r_key, r_val, composite_state):
             """Apply a read operation with (key, value) to the state."""
-            assert composite_state.solver.satisfiable()
             composite_states_next = []
 
             # Here we consider the cases where it's possible to read something
             # we previously wrote to.
             not_overwritten_c = []
             for w_key, w_val in composite_state.storage_written.items():
-                c_key = r_key == w_key
-                c_val = r_val == w_val
-                if composite_state.solver.satisfiable(extra_constraints=[c_key, c_val]):
+                read_written = [r_key == w_key, r_val == w_val]
+
+                if composite_state.solver.satisfiable(extra_constraints=read_written):
                     not_overwritten_c.append(r_key != w_key)
                     cs = composite_state.copy()
-                    cs.solver.add(c_key)
-                    cs.solver.add(c_val)
-                    assert cs.solver.satisfiable()
+                    cs.solver.add(read_written)
                     composite_states_next.append(cs)
                     logger.debug("Found key read %s, corresponding to key written %s", r_key, w_key)
 
@@ -130,6 +126,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 composite_state.storage_written[key] = val
 
         logger.debug("_append_state: found states: %s", composite_states)
+
         return composite_states
 
     def check_states(self, states, timeout, max_depth):
@@ -155,16 +152,17 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 (State(self.reference_states[0].env), [state]))
 
         # Recursive exploration
+        last_path_len = 1
         time_start = time.process_time()
         while self.path_queue:
             initial_composite_state, path = self.path_queue.popleft()
 
-            #try:
+            if len(path) > last_path_len:
+                logger.info("Now scanning paths of length %i.", len(path))
+                last_path_len = len(path)
+
             new_composite_states = self._append_state(
                     initial_composite_state, path[-1])
-            #except claripy.errors.ClaripyError as error:
-            #    logger.warning("Claripy error in _append_state: %s", error)
-            #    continue
 
             for composite_state in new_composite_states:
                 if self._search_path(composite_state, path) is not None:

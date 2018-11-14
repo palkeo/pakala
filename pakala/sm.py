@@ -49,7 +49,7 @@ class SymbolicMachine:
     """
     def __init__(self, env):
         self.code = utils.disassemble(env.code)
-        logging.debug("Initializing symbolic machine with source code: %s", self.code)
+        logger.debug("Initializing symbolic machine with source code: %s", self.code)
         # For use by heapq only. Contains couples (score, state).
         self.branch_queue = []
         self.states_seen = set()
@@ -506,12 +506,12 @@ class SymbolicMachine:
             coverage = sum(bool(c) for c in self.coverage)
             if coverage > last_coverage:
                 time_last_coverage_increase = time.process_time()
-                logging.info("Coverage went from %i to %i.", last_coverage, coverage)
+                logger.info("Coverage went from %i to %i.", last_coverage, coverage)
                 last_coverage = coverage
 
             if ((not timeout_sec and time.process_time() - time_last_coverage_increase > max(60, time_last_coverage_increase - time_start))
                  or (timeout_sec and time.process_time() - time_start > timeout_sec)):
-                logging.debug("Timeout.")
+                logger.debug("Timeout.")
                 self.interpreter_errors["execute timeout"] += 1
                 break
 
@@ -543,8 +543,10 @@ class SymbolicMachine:
             score, state = heapq.heappop(self.branch_queue)
             self.add_partial_outcome(state)
 
-        logger.info('Analysis finished with %i outcomes, coverage is %i%%',
+        logger.info('Analysis finished with %i outcomes (%i interesting), '
+                    'coverage is %i%%',
                     len(self.outcomes),
+                    sum(int(o.is_interesting()) for o in self.outcomes),
                     int(self.get_coverage() * 100))
 
         if self.code_errors:
