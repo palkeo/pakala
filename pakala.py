@@ -17,6 +17,11 @@ from web3.auto import w3
 from web3 import Web3
 
 
+def err_exit(message):
+    print(message, file=sys.stderr)
+    exit(-1)
+
+
 def ethWeiAmount(arg):
     m = re.match(r'^([0-9.]+) ?(\w+)$', arg)
     if m is None:
@@ -27,63 +32,72 @@ def ethWeiAmount(arg):
 
 parser = argparse.ArgumentParser(
     description="Find exploitable Ethereum smart contracts.")
-parser.add_argument("contract_addr", help="Address of the contract to analyze.")
 
-timeouts = parser.add_argument_group("limits")
-timeouts.add_argument(
+parser.add_argument(
+        "contract_addr",
+        help="Address of the contract to analyze. "
+             "Use '-' for reading runtime bytecode from stdin instead.")
+parser.add_argument(
+        '-v',
+        default='INFO',
+        help='log level (INFO, DEBUG...)',
+        metavar='LOG_LEVEL')
+parser.add_argument(
+        '-s', '--summarize',
+        action='store_true',
+        help='enable summarizer (EXPERIMENTAL)')
+
+limits = parser.add_argument_group("time/depth limits")
+limits.add_argument(
         "--exec-timeout",
-        help="Timeout in seconds for the symbolic execution stage.\nUse 0 for a system that will stop when the last coverage increase was too long ago.",
+        help="Timeout in seconds for the symbolic execution stage. Use 0 for a system that will stop when the last coverage increase was too long ago.",
         type=int, default=0, metavar='SECONDS')
-timeouts.add_argument(
+limits.add_argument(
         "--analysis-timeout",
-        help="Timeout in seconds for the analysis stage (that will stack the executions and find bugs).\nUse 0 to disable timeout and use only depth limit.",
+        help="Timeout in seconds for the analysis stage (that will stack the executions and find bugs). Use 0 to disable timeout and use only depth limit.",
         type=int, default=0, metavar='SECONDS')
-
-
-options = parser.add_argument_group('options')
-options.add_argument('-v', type=int, default=1, help='log level (0-3)', metavar='LOG_LEVEL')
-options.add_argument(
+limits.add_argument(
         "--max-outcomes-depth",
         help="Maximum number of outcomes that can be fused together during the analysis step.",
         type=int, default=5)
-options.add_argument(
+
+
+environment = parser.add_argument_group('environment')
+environment.add_argument(
         '-b', '--force-balance',
         type=ethWeiAmount,
         help="Don't use the current contract balance, instead force it to a value.", metavar="BALANCE")
-options.add_argument(
+environment.add_argument(
         '-B', '--block',
         default='latest',
+        type=lambda block_number: hex(int(block_number)) if block_number.isnumeric() else block_number,
         help="Use the code/balance/storage at that block instead of latest.")
-options.add_argument(
+
+analyzer = parser.add_argument_group('analyzer tweaks')
+analyzer.add_argument(
         '-m', '--min-to-receive',
         type=ethWeiAmount,
         default="1 milliether",
         help="Minimum amount to receive from the contract to consider it a bug.",
         metavar="BALANCE")
-options.add_argument(
+analyzer.add_argument(
         '-M', '--max-to-send',
         type=ethWeiAmount,
         default="10 ether",
         help="Maximum amount allowed to send to the contract (even if we would receive more).",
         metavar="BALANCE")
-options.add_argument(
-        '-s', '--summarize', action='store_true',
-        help='enable summarizer (EXPERIMENTAL)')
 
 args = parser.parse_args()
 
-if not args.contract_addr:
-    parser.print_help()
-    sys.exit()
-
-logging.basicConfig(level=[logging.ERROR, logging.WARNING, logging.INFO, logging.DEBUG][args.v])
+if not hasattr(logging, args.v.upper()):
+    err_exit("Logging should be DEBUG/INFO/WARNING/ERROR.")
+logging.basicConfig(level=getattr(logging, args.v.upper()))
 
 if args.contract_addr == '-':
     # Let's read the runtime bytecode from stdin
     code = sys.stdin.read().strip('\n')
     if not code.isalnum():
-        print("Runtime bytecode read from stdin needs to be hexadecimal.")
-        sys.exit()
+        err_exit("Runtime bytecode read from stdin needs to be hexadecimal.")
     code = codecs.decode(code, 'hex')
     # Dummy address, dummy balance
     args.contract_addr = '0xDEADBEEF00000000000000000000000000000000'
@@ -99,9 +113,8 @@ print("Analyzing contract at %s with balance %f ether."
       % (args.contract_addr, Web3.fromWei(balance, 'ether')))
 
 if balance < args.min_to_receive:
-    print("Balance is smaller than --min-wei-to-receive: "
-          "the analyzer will never find anything.")
-    sys.exit()
+    err_exit("Balance is smaller than --min-wei-to-receive: "
+             "the analyzer will never find anything.")
 
 if args.summarize:
     logging.info("Summarizer enabled, we won't constrain the caller/origin "
