@@ -6,6 +6,7 @@ import json
 import subprocess
 import codecs
 import collections
+import shutil
 
 from web3 import Web3
 
@@ -31,6 +32,7 @@ class SolidityTest(unittest.TestCase):
         super().__init__()
         self.filename = filename
 
+    @unittest.skipIf(shutil.which("solc") is None, "solc compiler not installed.")
     def runTest(self):
         logger.info("Compiling contract %s" % self.filename)
         output = subprocess.check_output(
