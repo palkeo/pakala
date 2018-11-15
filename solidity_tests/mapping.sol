@@ -24,11 +24,12 @@ contract Mapping {
         b.payout += amount;
     }
 
-    function withdraw() public {
+    function withdraw() public returns (int) {
         var p = participants[msg.sender];
         require(p.payout > 0.1 ether && p.total_paid > 0);
         msg.sender.transfer(p.payout);
         p.payout = 0;
+        return 42;
     }
 
 }
