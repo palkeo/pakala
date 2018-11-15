@@ -57,9 +57,9 @@ limits.add_argument(
         help="Timeout in seconds for the analysis stage (that will stack the executions and find bugs). Use 0 to disable timeout and use only depth limit.",
         type=int, default=0, metavar='SECONDS')
 limits.add_argument(
-        "--max-outcomes-depth",
+        "--max-transaction-depth",
         help="Maximum number of outcomes that can be fused together during the analysis step.",
-        type=int, default=5)
+        type=int, default=4)
 
 
 environment = parser.add_argument_group('environment')
@@ -158,7 +158,7 @@ ra = recursive_analyzer.RecursiveAnalyzer(
 bug = ra.check_states(
         s.outcomes,
         timeout=args.analysis_timeout,
-        max_depth=args.max_outcomes_depth)
+        max_depth=args.max_transaction_depth)
 
 if bug:
     print("=================== Bug found! ===================")

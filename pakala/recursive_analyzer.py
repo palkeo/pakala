@@ -160,6 +160,9 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             if len(path) > last_path_len:
                 logger.info("Now scanning paths of length %i.", len(path))
                 last_path_len = len(path)
+            if len(path) > max_depth:
+                logger.debug("Over the max allowed depth, stopping.")
+                return
 
             new_composite_states = self._append_state(
                     initial_composite_state, path[-1])
@@ -170,7 +173,4 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
 
             if timeout and time.process_time() - time_start > timeout:
                 logger.debug("Timeout at depth %i, stopping.", len(path))
-                return
-            if len(path) > max_depth:
-                logger.debug("Over the max allowed depth, stopping.")
                 return

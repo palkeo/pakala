@@ -148,3 +148,13 @@ class FakeStorage(dict):
         return True
 
 
+class EmptyStorage(object):
+    """For testing, you can override the storage_cache with an instance of this
+    class, which will simulate a completely empty storage."""
+
+    def __contains__(self, key):
+        return True
+
+    def __getitem__(self, key):
+        return 0
+
