@@ -5,7 +5,7 @@ contract MultipleWriteOneTx {
     uint256 public count = 0;
 
     function increment() public {
-        require(!initialized);
+        require(initialized == 0);
         count++;
         initialized = 1;
         count++;
