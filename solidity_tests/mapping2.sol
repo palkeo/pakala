@@ -6,6 +6,7 @@ contract Mapping {
 
     mapping(address => Participant) participants;
 
+
     function deposit(address beneficiary) public payable {
         var b = participants[beneficiary];
         b.total_paid += msg.value;

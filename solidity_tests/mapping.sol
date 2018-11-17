@@ -18,6 +18,7 @@ contract Mapping {
         require(beneficiary != msg.sender);
 
         var p = participants[msg.sender];
+        require(p.total_paid >= amount);
         p.payout -= amount;
 
         var b = participants[beneficiary];

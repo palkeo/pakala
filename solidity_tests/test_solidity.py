@@ -7,6 +7,7 @@ import subprocess
 import codecs
 import collections
 import shutil
+import sys
 
 from web3 import Web3
 
@@ -20,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 MAX_TO_SEND = Web3.toWei(1000, 'ether')
 MIN_TO_RECEIVE = Web3.toWei(1, 'wei')
-EXEC_TIMEOUT = 3*60
-ANALYSIS_TIMEOUT = 3*60
+EXEC_TIMEOUT = 1*60
+ANALYSIS_TIMEOUT = 30*60
 MAX_TRANSACTION_DEPTH = 4
 ADDRESS = '0xDEADBEEF00000000000000000000000000000000'
 BALANCE = Web3.toWei(1, 'ether')
@@ -78,5 +79,10 @@ def load_tests(loader, tests, pattern):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    unittest.main()
+    logging.basicConfig(level=logging.DEBUG)
+    if len(sys.argv) == 1:
+        unittest.main()
+    else:
+        files = sys.argv[1:]
+        for filename in files:
+            SolidityTest(filename).runTest()
