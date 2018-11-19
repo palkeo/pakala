@@ -506,7 +506,8 @@ class SymbolicMachine:
             coverage = sum(bool(c) for c in self.coverage)
             if coverage > last_coverage:
                 time_last_coverage_increase = time.process_time()
-                logger.info("Coverage went from %i to %i.", last_coverage, coverage)
+                logger.log(utils.INFO_INTERACTIVE,
+                           "Coverage went from %i to %i.", last_coverage, coverage)
                 last_coverage = coverage
 
             if ((not timeout_sec and time.process_time() - time_last_coverage_increase > max(60, time_last_coverage_increase - time_start))

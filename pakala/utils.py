@@ -13,6 +13,9 @@ logging._loggerClass = logging.Logger  # Counter-hack to fix the logging monkey-
 
 from pakala import claripy_sha3
 
+# Custom logging levels:
+INFO_INTERACTIVE = 21
+logging.addLevelName(INFO_INTERACTIVE, "INFO_INTERACTIVE")
 
 ADDR_MASK = 0xffffffffffffffffffffffffffffffffffffffff
 

@@ -39,7 +39,7 @@ parser.add_argument(
              "Use '-' for reading runtime bytecode from stdin instead.")
 parser.add_argument(
         '-v',
-        default='INFO',
+        default=str(utils.INFO_INTERACTIVE),
         help='log level (INFO, DEBUG...)',
         metavar='LOG_LEVEL')
 parser.add_argument(
@@ -89,9 +89,12 @@ analyzer.add_argument(
 
 args = parser.parse_args()
 
-if not hasattr(logging, args.v.upper()):
+if args.v.isnumeric():
+    logging.basicConfig(level=int(args.v))
+elif hasattr(logging, args.v.upper()):
+    logging.basicConfig(level=getattr(logging, args.v.upper()))
+else:
     err_exit("Logging should be DEBUG/INFO/WARNING/ERROR.")
-logging.basicConfig(level=getattr(logging, args.v.upper()))
 
 if args.contract_addr == '-':
     # Let's read the runtime bytecode from stdin

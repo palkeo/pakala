@@ -158,7 +158,8 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             initial_composite_state, path = self.path_queue.popleft()
 
             if len(path) > last_path_len:
-                logger.info("Now scanning paths of length %i.", len(path))
+                logger.log(utils.INFO_INTERACTIVE,
+                           "Now scanning paths of length %i.", len(path))
                 last_path_len = len(path)
             if len(path) > max_depth:
                 logger.debug("Over the max allowed depth, stopping.")
