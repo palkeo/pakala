@@ -6,6 +6,31 @@ Pakala
 * Pakala is a tool to search for exploitable bugs in Ethereum smart contracts.
 * Pakala is a symbolic execution engine for the Ethereum Virtual Machine.
 
+The intended public for the tools are security researchers interested by Ethereum / the EVM.
+
+Installation
+------------
+
+Usage
+-----
+
+Example use on a contract, where at that block you could steal money from:
+
+```
+./pakala.py 0xe82719202e5965Cf5D9B6673B7503a3b92DE20be --block 1306711
+```
+
+See ``./pakala.py`` help for more complete usage information.
+
+Installation
+------------
+
+```
+pip install pakala
+```
+
+It works only with python 3.
+
 What does it do?
 ----------------
 
@@ -18,7 +43,7 @@ It basically looks for ways to get money out of the contract, into an address th
 attacker control. That's the most obvious kind of vulnerability that people would
 seek to exploit.
 
-Differences from other tools
+Differences with other tools
 ----------------------------
 
 This tool operates at the level of EVM bytecode, and aims at being
