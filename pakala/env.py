@@ -1,5 +1,6 @@
 import collections
 import numbers
+import time
 
 import claripy
 
@@ -13,8 +14,8 @@ ENV_VARS = (
     ('address', None, None),
     ('balance', None, None),
     ('gas', None, None),
-    ('block_timestamp', 10**9, 2*(10**9)),
-    ('block_number', 4130000, 10**9),
+    ('block_timestamp', int(time.time()), int(time.time() + 86400*365)),
+    ('block_number', 6000000, 10**9),
     ('calldata_size', None, 2**20),
     ('coinbase', None, None),
     ('difficulty', None, None),
