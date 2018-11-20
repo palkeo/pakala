@@ -82,8 +82,11 @@ class Sha3Mixin(object):
         # TODO: Put the assertion here. Problem is that this is called from
         # inside claripy as well.
         #assert _no_sha3_symbols(extra_constraints)
-        extra_constraints = self._hash_constraints(
-                extra_constraints, hashes=self.hashes.copy())
+        try:
+            extra_constraints = self._hash_constraints(
+                    extra_constraints, hashes=self.hashes.copy())
+        except claripy.errors.UnsatError:
+            return False
         return super().satisfiable(extra_constraints=extra_constraints)
 
     def eval(self, e, n, extra_constraints=(), **kwargs):
@@ -135,13 +138,13 @@ class Sha3Mixin(object):
             # Do s1 needs to be equal to s2 ? Then in1 needs to be equal to in2
             if not super().satisfiable(extra_constraints=extra_constraints + [s1 != s2]):
                 new_extra_constraints.append(in1 == in2)
-                logger.debug("Added constraint: %s", in1 == in2)
+                logger.debug("Added input constraint: %s", in1 == in2)
                 pairs_done.add((s1, s2))
                 pairs_done.add((s2, s1))
             # Do s1 needs to be != to s2 ? Then in1 needs to be != to in2
             elif not super().satisfiable(extra_constraints=extra_constraints + [s1 == s2]):
                 new_extra_constraints.append(in1 != in2)
-                logger.debug("Added constraint: %s", in1 != in2)
+                logger.debug("Added input constraint: %s", in1 != in2)
                 pairs_done.add((s1, s2))
                 pairs_done.add((s2, s1))
 
@@ -152,14 +155,13 @@ class Sha3Mixin(object):
         assert super().satisfiable(extra_constraints=extra_constraints)
 
         for in1, s1 in hashes.items():
-            try:
-                sol1, = super().eval(in1, 1, extra_constraints=extra_constraints)
-            except claripy.errors.UnsatError:
-                break
+            # Next line can raise UnsatError. Handled in the caller if needed.
+            sol1, = super().eval(in1, 1, extra_constraints=extra_constraints)
             extra_constraints.append(in1 == sol1)
-            # TODO: use actual hash value! Not this ugly thing.
+            # TODO: use actual hash value! Not this pseudo-hash thing.
             random.seed(sol1)
             extra_constraints.append(s1 == random.randint(0, 2**256 - 1))
+            logger.debug("Added concrete constraint: %s", extra_constraints[-1])
 
         return tuple(extra_constraints)
 
