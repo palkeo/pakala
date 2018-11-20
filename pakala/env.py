@@ -35,6 +35,11 @@ class Env(object):
         return "Env(balance=%s, caller=%s, value=%s)" % (
             self.balance, self.caller, self.value)
 
+    def as_dict(self):
+        return {'balance': self.balance,
+                'caller': self.caller,
+                'value': self.value}
+
     def clean_copy(self):
         """Create a new env, which is a copy of the current one but with
         new symbolic variables (with the same name)"""

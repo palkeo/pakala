@@ -5,6 +5,7 @@ import logging
 import sys
 import time
 import re
+import pprint
 
 from pakala import sm
 from pakala import recursive_analyzer
@@ -165,9 +166,14 @@ bug = ra.check_states(
 
 if bug:
     print("=================== Bug found! ===================")
-    print('Composite state: %s' % bug[0])
+    print('Composite state:')
+    pprint.pprint(bug[0].as_dict())
     print()
-    print('Path: %s' % bug[1])
+    print()
+    print('Path:')
+    for state in bug[1]:
+        print()
+        pprint.pprint(state.as_dict())
     print("=================== Bug found! ===================")
 else:
     print("Nothing to report.")

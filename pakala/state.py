@@ -36,9 +36,17 @@ class State(object):
 
     def __repr__(self):
         return ("State(suicide_to=%s, calls=%s, storage_written=%s, "
-                "storage_read=%s, env=%s, constraints=%s)") % (
+                "storage_read=%s, env=%s, solver=%s)") % (
                     self.suicide_to, self.calls, self.storage_written,
-                    self.storage_read, self.env, self.solver.constraints)
+                    self.storage_read, self.env, self.solver)
+
+    def as_dict(self):
+        return {'suicide_to': self.suicide_to,
+                'calls': self.calls,
+                'storage_written': self.storage_written,
+                'storage_read': self.storage_read,
+                'env': self.env.as_dict(),
+                'solver': self.solver.as_dict()}
 
     def clean(self):
         """Clean the state, when it won't be executed anymore and we are only

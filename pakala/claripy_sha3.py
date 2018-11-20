@@ -194,6 +194,15 @@ class Sha3Mixin(object):
 
         return combined
 
+    def __repr__(self):
+        return "ClaripySha3(constraints=%s, hashes=%s)" % (
+            self.constraints,
+            self.hashes)
+
+    def as_dict(self):
+        return {'constraints': self.constraints,
+                'hashes': self.hashes}
+
 
 class Solver(
     Sha3Mixin,
