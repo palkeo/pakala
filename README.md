@@ -6,7 +6,7 @@ Pakala
 * Pakala is a tool to search for exploitable bugs in Ethereum smart contracts.
 * Pakala is a symbolic execution engine for the Ethereum Virtual Machine.
 
-The intended public for the tools are security researchers interested by Ethereum / the EVM.
+The intended public for the tool are security researchers interested by Ethereum / the EVM.
 
 Installation
 ------------
@@ -17,7 +17,7 @@ Usage
 Example use on a contract, where at that block you could steal money from:
 
 ```
-./pakala.py 0xe82719202e5965Cf5D9B6673B7503a3b92DE20be --block 1306711
+./pakala.py 0xF55A32f0107523c14027C4a1e6177cD7291395A0 --block 5790628 --exec-timeout 600
 ```
 
 See ``./pakala.py`` help for more complete usage information.
@@ -43,14 +43,11 @@ It basically looks for ways to get money out of the contract, into an address th
 attacker control. That's the most obvious kind of vulnerability that people would
 seek to exploit.
 
-Differences with other tools
-----------------------------
+Goals
+-----
 
 This tool operates at the level of EVM bytecode, and aims at being
 agnostic to higher-level languages.
-
-It is made for searching exploitable bugs, or vulnerabilities. It won't warn
-about potential problems, only exploitable bugs.
 
 The false positive rate should be very low. From experience, the kind of false
 positives it will find are for contracts that can be emptied but only after a
@@ -64,8 +61,6 @@ For simplicity, there is no CFG analysis or anything. It just execute the code s
 
 It also does a bit of "fuzzing", to unblock itself in certain situations when
 pure symbols would not work. That means it tries various concrete values.
-
-It aims at being simple, clean, and have a good test coverage.
 
 How does it work
 ----------------
@@ -91,3 +86,25 @@ calling external contracts. It will never be able to find reentrancy bugs either
 
 You can use it as a reverse engineering tool: by simply listing the outcomes it
 is possible to get a good understanding of what the contract is doing.
+
+Difference with Mythril
+-----------------------
+
+Compared to Mythril, that's also a symbolic execution tool developed in Python: Mythril
+recursively calls other contracts and does everything in one step.
+
+Because Pakala has these two independent steps it doesn't support calling
+other contracts, but this has the upside of being able to build a list of
+valid executions that the second step can stack. That's much faster if you
+want to go deeper in the number of transactions you can stack.
+
+We have a solidity test suite with various simple contracts that are vulnerable (``solidity_tests/``):
+
+* pakala found bugs in: 12/12 (``python -m unittest discover solidity_tests/``)
+* mythril found bugs in: 7/12 (``ulimit -Sv 5000000; for i in solidity_tests/*.sol; do echo $i && ../mythril/myth -mether_thief,suicide -x $i -t4 --execution-timeout 600; done``)
+
+Obviously it's biased towards what pakala support, as we don't include contracts calling other contracts, for example.
+
+We test things like being able to write to an arbitrary storage location and overriding another
+variable, needing multiple transactions, mapping from address to variables, integer overflows...
+
