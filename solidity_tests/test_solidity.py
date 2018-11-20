@@ -36,9 +36,13 @@ class SolidityTest(unittest.TestCase):
     @unittest.skipIf(shutil.which("solc") is None, "solc compiler not installed.")
     def runTest(self):
         logger.info("Compiling contract %s" % self.filename)
-        output = subprocess.check_output(
-            ["solc", "--optimize", "--combined-json=bin-runtime", self.filename])
-        output = json.loads(output)
+        p = subprocess.run(
+            ["solc", "--optimize", "--combined-json=bin-runtime", self.filename],
+            capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0,
+                         "solc compilation failed:\n%s" % p.stderr)
+
+        output = json.loads(p.stdout)
 
         assert "contracts" in output
         identifier, properties = list(output['contracts'].items())[0]
