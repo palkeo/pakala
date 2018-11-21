@@ -97,6 +97,7 @@ class BaseAnalyzer(object):
 
         for call in state.calls:
             value, to, gas = call[-3:] # pylint: disable=unused-variable,invalid-name
+            # TODO: Not accurate. I need to add the equality as a constraint too.
             if state.solver.satisfiable(
                     extra_constraints=[to[159:0] == self.caller[159:0]]):
                 received_to.append(to)
@@ -111,7 +112,7 @@ class BaseAnalyzer(object):
         logger.debug("Found %i calls back to caller.", len(received_to))
 
         constraints = sent_constraints + extra_constraints + read_constraints + [
-            state.env.balance >= total_received, # Enough money?
+            state.env.balance + total_sent >= total_received, # Enough money?
             total_received > total_sent, # I get more than what I sent?
             total_received > self.min_wei_to_receive,
             state.env.caller == utils.DEFAULT_CALLER,
