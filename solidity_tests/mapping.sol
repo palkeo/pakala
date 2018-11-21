@@ -1,3 +1,7 @@
+// 0xb7760c8f : transfer
+// 0x3ccfd60b : withdraw
+// 0xd0e30db0 : deposit
+
 contract Mapping {
     struct Participant {
         uint total_paid;
