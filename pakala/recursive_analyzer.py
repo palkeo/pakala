@@ -103,12 +103,12 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                     not_overwritten_c.append(r_key != w_key)
                     cs = composite_state.copy()
                     cs.solver.add(read_written)
+                    del cs.storage_written[w_key]
                     composite_states_next.append(cs)
                     logger.debug("Found key read %s, corresponding to key written %s", r_key, w_key)
 
             # Is it not something we previously wrote to?
-            for c in not_overwritten_c:
-                composite_state.solver.add(c)
+            composite_state.solver.add(not_overwritten_c)
             composite_state.solver.add(
                 state.storage_read[r_key] == self._read_storage(state, r_key))
             if composite_state.solver.satisfiable():
