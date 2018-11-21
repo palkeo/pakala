@@ -4,6 +4,7 @@ import functools
 import datetime
 import time
 import itertools
+import pprint
 
 import claripy
 
@@ -15,9 +16,11 @@ from pakala.state import State
 logger = logging.getLogger(__name__)
 
 
+DEBUG_MARK_PATH = []
+
+
 def is_function(state, function):
-    return state.solver.satisfiable([
-        state.env.calldata.read(0, 4) == function])
+    return state.solver.satisfiable([state.env.calldata.read(0, 4) == function])
 
 
 class RecursiveAnalyzer(analyzer.BaseAnalyzer):
@@ -70,8 +73,12 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 (composite_state.copy(), path + [reference_state]))
 
     def _append_state(self, composite_state, state):
-        logger.debug("_append_state: appending state %s to composite state %s",
-                     state, composite_state)
+        # May fail because pprint compare claripy symbols. So only if needed.
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("_append_state: appending state %s\nto composite state %s",
+                        pprint.pformat(state.as_dict()),
+                        pprint.pformat(composite_state.as_dict()))
+
         assert composite_state.suicide_to is None
 
         composite_state.solver = composite_state.solver.combine([state.solver])
@@ -98,12 +105,11 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             not_overwritten_c = []
             for w_key, w_val in composite_state.storage_written.items():
                 read_written = [r_key == w_key, r_val == w_val]
+                not_overwritten_c.append(r_key != w_key)
 
                 if composite_state.solver.satisfiable(extra_constraints=read_written):
-                    not_overwritten_c.append(r_key != w_key)
                     cs = composite_state.copy()
                     cs.solver.add(read_written)
-                    del cs.storage_written[w_key]
                     composite_states_next.append(cs)
                     logger.debug("Found key read %s, corresponding to key written %s", r_key, w_key)
 
@@ -123,10 +129,21 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 for composite_state in composite_states))
 
         for composite_state in composite_states:
+            # Delete any storage_written at the same key in the composite
+            # state.
+            for c_key in list(composite_state.storage_written.keys()):
+                for key in state.storage_written.keys():
+                    if not composite_state.solver.satisfiable(extra_constraints=[key != c_key]):
+                        del composite_state.storage_written[c_key]
+                        break
+
             for key, val in state.storage_written.items():
                 composite_state.storage_written[key] = val
 
-        logger.debug("_append_state: found states: %s", composite_states)
+        # May fail because pprint compare claripy symbols. So only if needed.
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("_append_state: found states: %s",
+                         pprint.pformat([composite_state.as_dict() for composite_state in composite_states]))
 
         return composite_states
 
@@ -165,6 +182,12 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             if len(path) > max_depth:
                 logger.debug("Over the max allowed depth, stopping.")
                 return
+
+            if (DEBUG_MARK_PATH and
+                all(is_function(s, f) for s, f in zip(path, DEBUG_MARK_PATH))):
+                logger.warning('DEBUG_MARK_PATH len %i', len(path))
+                logger.warning('path: %s', path)
+                breakpoint()
 
             new_composite_states = self._append_state(
                     initial_composite_state, path[-1])
