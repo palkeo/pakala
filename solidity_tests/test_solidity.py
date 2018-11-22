@@ -34,7 +34,7 @@ class SolidityTest(unittest.TestCase):
         self.filename = filename
 
     def shortDescription(self):
-        return self.filename
+        return os.path.basename(self.filename)
 
     @unittest.skipIf(shutil.which("solc") is None, "solc compiler not installed.")
     def runTest(self):
