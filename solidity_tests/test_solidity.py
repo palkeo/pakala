@@ -33,6 +33,9 @@ class SolidityTest(unittest.TestCase):
         super().__init__()
         self.filename = filename
 
+    def shortDescription(self):
+        return self.filename
+
     @unittest.skipIf(shutil.which("solc") is None, "solc compiler not installed.")
     def runTest(self):
         logger.info("Compiling contract %s" % self.filename)
