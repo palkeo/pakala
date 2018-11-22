@@ -76,7 +76,7 @@ class State(object):
         self.suicide_to = None if self.suicide_to is None else r(self.suicide_to)
 
         # TODO: Do something cleaner! This work only with our custom solver mixin.
-        self.solver.replace(r)
+        self.solver = self.solver.replace(r)
         #constraints = [r(i) for i in self.solver.constraints]
         #self.solver = utils.get_solver()
         #for c in constraints:
