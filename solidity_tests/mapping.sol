@@ -1,7 +1,3 @@
-// 0xb7760c8f : transfer
-// 0x3ccfd60b : withdraw
-// 0xd0e30db0 : deposit
-
 contract Mapping {
     struct Participant {
         uint total_paid;
@@ -22,7 +18,6 @@ contract Mapping {
         require(beneficiary != msg.sender);
 
         var p = participants[msg.sender];
-        require(p.total_paid >= amount);
         p.payout -= amount;
 
         var b = participants[beneficiary];
