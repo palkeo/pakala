@@ -98,9 +98,9 @@ class State(object):
         for k, v in self.storage_read.items():
             x ^= hash((k, v))
         l.append(x)
-        #for constraint in self.solver.constraints:
-        #    x ^= hash(constraint)
-        #l.append(x)
+        for constraint in self.solver.constraints:
+            x ^= hash(constraint)
+        l.append(x)
         return hash(tuple(l))
 
     def stack_push(self, x):
