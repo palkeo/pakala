@@ -189,11 +189,8 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 logger.warning('path: %s', path)
                 breakpoint()
 
-            try:
-                new_composite_states = self._append_state(
-                        initial_composite_state, path[-1])
-            except AssertionError:
-                continue
+            new_composite_states = self._append_state(
+                    initial_composite_state, path[-1])
 
             for composite_state in new_composite_states:
                 if self._search_path(composite_state, path) is not None:

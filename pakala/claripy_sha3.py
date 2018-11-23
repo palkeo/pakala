@@ -180,12 +180,7 @@ class Sha3Mixin(object):
                                 for i in self.constraints]
         self.hashes = new_hashes
 
-        # This is to clear claripy internal caches... Otherwise something
-        # satisfiable may become unsatisfiable after the replace. Not sure why.
-        s = Solver()
-        s.hashes = self.hashes
-        s.add(self.constraints)
-        return s
+        self.downsize()  # Half-assed attempt at clearing caches... TODO improve.
 
     def combine(self, others):
         combined = super().combine(others)

@@ -439,43 +439,18 @@ class SymbolicMachine:
                 state.memory.write(index, 1, value[7:0])
             elif op == 'MSIZE':
                 state.stack_push(bvv(state.memory.size()))
-
             elif op == 'SLOAD':
-                state.pc += 1
                 key = state.stack_pop()
-                for w_key, w_value in state.storage_written.items():
-                    read_written = [w_key == key]
-                    if state.solver.satisfiable(extra_constraints=read_written):
-                        new_state = state.copy()
-                        new_state.solver.add(read_written)
-                        new_state.stack_push(w_value)
-                        self.add_branch(new_state)
-                        state.solver.add(w_key != key)
-                if state.solver.satisfiable():
-                    assert key not in state.storage_written
+                if key in state.storage_written:
+                    state.stack_push(state.storage_written[key])
+                else:
                     if key not in state.storage_read:
                         state.storage_read[key] = claripy.BVS('storage[%s]' % key, 256)
                     state.stack_push(state.storage_read[key])
-                    self.add_branch(state)
-                return
-
             elif op == 'SSTORE':
-                state.pc += 1
                 key = state.stack_pop()
                 value = state.stack_pop()
-                for w_key, w_value in state.storage_written.items():
-                    read_written = [w_key == key]
-                    if state.solver.satisfiable(extra_constraints=read_written):
-                        new_state = state.copy()
-                        new_state.solver.add(read_written)
-                        new_state.storage_written[w_key] = value
-                        self.add_branch(new_state)
-                        state.solver.add(w_key != key)
-                if state.solver.satisfiable():
-                    assert key not in state.storage_written
-                    state.storage_written[key] = value
-                    self.add_branch(state)
-                return
+                state.storage_written[key] = value
 
             elif op == 'CALL':
                 state.pc += 1
