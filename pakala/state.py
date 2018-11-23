@@ -45,7 +45,7 @@ class State(object):
                 'calls': self.calls,
                 'storage_written': self.storage_written,
                 'storage_read': self.storage_read,
-                'env': self.env.as_dict(),
+                'env': None if self.env is None else self.env.as_dict(),
                 'solver': self.solver.as_dict()}
 
     def clean(self):
@@ -87,15 +87,20 @@ class State(object):
              hash(self.suicide_to)]
         for i in self.stack:
             l.append(hash(i))
-        for k, v in self.storage_written.items():
-            l.append(hash(k) ^ hash(v))
-        for k, v in self.storage_read.items():
-            l.append(hash(k) ^ hash(v))
         for call in self.calls:
             for arg in call:
                 l.append(hash(arg))
-        for constraint in self.solver.constraints:
-            l.append(hash(constraint))
+        # The following is because the ordering shouldn't matter:
+        x = 0
+        for k, v in self.storage_written.items():
+            x ^= hash((k, v))
+        l.append(x)
+        for k, v in self.storage_read.items():
+            x ^= hash((k, v))
+        l.append(x)
+        #for constraint in self.solver.constraints:
+        #    x ^= hash(constraint)
+        #l.append(x)
         return hash(tuple(l))
 
     def stack_push(self, x):

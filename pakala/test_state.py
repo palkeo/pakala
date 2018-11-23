@@ -31,6 +31,22 @@ class TestState(unittest.TestCase):
         state_copy.stack_push(state_copy.env.calldata.read(0, 1))
         self.assertEqual(hash(state), hash(state_copy))
 
+    def testSameHashIfDifferentOrder(self):
+        a = State()
+        b = State()
+        self.assertEqual(hash(a), hash(b))
+
+        e = env.Env("code")
+
+        a.solver.add(e.value == 1)
+        a.solver.add(e.block_timestamp == 2)
+
+        # Same thing, different order
+        b.solver.add(e.block_timestamp == 2)
+        b.solver.add(e.value == 1)
+
+        self.assertEqual(hash(a), hash(b))
+
     def testReplace(self):
         old_env = env.Env(b'')
         new_env = old_env.clean_copy()
