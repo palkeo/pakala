@@ -23,6 +23,22 @@ def is_function(state, function):
     return state.solver.satisfiable([state.env.calldata.read(0, 4) == function])
 
 
+def with_new_env(state):
+    assert state.solver.satisfiable()
+    old_env = state.env
+    new_env = old_env.clean_copy()
+    state = state.copy()
+    state.env = new_env
+    state.replace(functools.partial(env.replace, old_env, new_env))
+
+    for read_k, read_v in state.storage_read.items():
+        new_v = claripy.BVS('storage[%s]' % read_k, 256)
+        state.replace(lambda ast: ast.replace(read_v, new_v))
+
+    assert state.solver.satisfiable()
+    return state
+
+
 class RecursiveAnalyzer(analyzer.BaseAnalyzer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -40,11 +56,11 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
 
     @property
     def address(self):
-        return self.reference_states[0].env.address
+        return self.reference_states[0][0].env.address
 
     @property
     def caller(self):
-        return self.reference_states[0].env.caller
+        return self.reference_states[0][0].env.caller
 
     def _search_path(self, composite_state, path):
         logger.debug("Search path: %s", path)
@@ -68,9 +84,14 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
         # they will collectively end up eating all the memory.
         composite_state.solver.downsize()
 
-        for reference_state in self.reference_states:
-            self.path_queue.append(
-                (composite_state.copy(), path + [reference_state]))
+        # For each reference state, find the right one (with an unused env)
+        # and add it to the queue.
+        for reference_states in self.reference_states:
+            for reference_state in reference_states:
+                if all(s is not reference_state for s in path):
+                    self.path_queue.append(
+                        (composite_state.copy(), path + [reference_state]))
+                    break
 
     def _append_state(self, composite_state, state):
         # May fail because pprint compare claripy symbols. So only if needed.
@@ -82,7 +103,6 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
         assert composite_state.suicide_to is None
 
         composite_state.solver = composite_state.solver.combine([state.solver])
-        composite_state.storage_read.update(state.storage_read)
 
         if not composite_state.solver.satisfiable():
             return []
@@ -154,20 +174,17 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
 
         # Each state must have its own independent environment
         assert not self.reference_states
-        assert all(i.env is states[0].env for i in states)
-        for state in states:
-            old_env = state.env
-            new_env = old_env.clean_copy()
-            state = state.copy()
-            state.env = new_env
-            state.replace(functools.partial(env.replace, old_env, new_env))
-            self.reference_states.append(state)
 
-        # Add them to the paths to explore
-        for state in self.reference_states:
-            assert state.solver.satisfiable()
+        # For each state, a list of equivalent state, but each in a different
+        # env so that they can be stacked together.
+        self.reference_states = []
+        for state in states:
+            self.reference_states.append(
+                [with_new_env(state) for _ in range(max_depth)])
+            # Add it to the paths to explore
+            # TODO: The composite state should be without env!
             self.path_queue.append(
-                (State(self.reference_states[0].env), [state]))
+                (State(states[0].env), [self.reference_states[-1][0]]))
 
         # Recursive exploration
         last_path_len = 1
