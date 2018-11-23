@@ -56,11 +56,11 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
 
     @property
     def address(self):
-        return self.reference_states[0][0].env.address
+        return self.reference_states[0].env.address
 
     @property
     def caller(self):
-        return self.reference_states[0][0].env.caller
+        return self.reference_states[0].env.caller
 
     def _search_path(self, composite_state, path):
         logger.debug("Search path: %s", path)
@@ -84,14 +84,9 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
         # they will collectively end up eating all the memory.
         composite_state.solver.downsize()
 
-        # For each reference state, find the right one (with an unused env)
-        # and add it to the queue.
-        for reference_states in self.reference_states:
-            for reference_state in reference_states:
-                if all(s is not reference_state for s in path):
-                    self.path_queue.append(
-                        (composite_state.copy(), path + [reference_state]))
-                    break
+        for reference_state in self.reference_states:
+            self.path_queue.append(
+                (composite_state.copy(), path + [reference_state]))
 
     def _append_state(self, composite_state, state):
         # May fail because pprint compare claripy symbols. So only if needed.
@@ -179,11 +174,9 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
         # env so that they can be stacked together.
         self.reference_states = []
         for state in states:
-            self.reference_states.append(
-                [with_new_env(state) for _ in range(max_depth)])
-            # Add it to the paths to explore
+            self.reference_states.append(with_new_env(state))
             self.path_queue.append(
-                (State(), [self.reference_states[-1][0]]))
+                (State(), [self.reference_states[-1]]))
 
         # Recursive exploration
         last_path_len = 1
