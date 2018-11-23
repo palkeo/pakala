@@ -77,22 +77,14 @@ class BaseAnalyzer(object):
 
         for s in path:
             extra_constraints += s.env.extra_constraints()
-
-        # Suicide
-        if state.suicide_to is not None:
-            final_balance = state.env.balance - sum(call[-3] for call in state.calls)
-            constraints = extra_constraints + read_constraints + [
-                final_balance > 0,
-                state.suicide_to[159:0] == self.caller[159:0]]
-            logger.debug("Check for suicide bug with constraints %s", constraints)
-            if state.solver.satisfiable(extra_constraints=constraints):
-                logger.info("Found suicide bug.")
-                return True
+            extra_constraints += [
+                s.env.caller == utils.DEFAULT_CALLER,
+                s.env.origin == utils.DEFAULT_CALLER]
 
         # Calls
         total_sent = sum(s.env.value for s in path)
         sent_constraints = [s.env.value < self.max_wei_to_send for s in path]
-        total_received = None
+        total_received = utils.bvv(0)
         received_to = []
 
         for call in state.calls:
@@ -101,10 +93,19 @@ class BaseAnalyzer(object):
             if state.solver.satisfiable(
                     extra_constraints=[to[159:0] == self.caller[159:0]]):
                 received_to.append(to)
-                if total_received is None:
-                    total_received = value
-                else:
-                    total_received += value
+                total_received += value
+
+        final_balance = path[0].env.balance + total_sent - total_received
+
+        # Suicide
+        if state.suicide_to is not None:
+            constraints = extra_constraints + read_constraints + [
+                final_balance >= self.min_wei_to_receive,
+                state.suicide_to[159:0] == self.caller[159:0]]
+            logger.debug("Check for suicide bug with constraints %s", constraints)
+            if state.solver.satisfiable(extra_constraints=constraints):
+                logger.info("Found suicide bug.")
+                return True
 
         if total_received is None:
             return False
@@ -112,11 +113,9 @@ class BaseAnalyzer(object):
         logger.debug("Found %i calls back to caller.", len(received_to))
 
         constraints = sent_constraints + extra_constraints + read_constraints + [
-            state.env.balance + total_sent >= total_received, # Enough money?
-            total_received > total_sent, # I get more than what I sent?
-            total_received > self.min_wei_to_receive,
-            state.env.caller == utils.DEFAULT_CALLER,
-            state.env.origin == utils.DEFAULT_CALLER]
+            final_balance >= 0,
+            total_received > total_sent,  # I get more than what I sent?
+            total_received > self.min_wei_to_receive]
 
         logger.debug("Extra constraints: %r", constraints)
 

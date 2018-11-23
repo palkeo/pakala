@@ -182,9 +182,8 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             self.reference_states.append(
                 [with_new_env(state) for _ in range(max_depth)])
             # Add it to the paths to explore
-            # TODO: The composite state should be without env!
             self.path_queue.append(
-                (State(states[0].env), [self.reference_states[-1][0]]))
+                (State(), [self.reference_states[-1][0]]))
 
         # Recursive exploration
         last_path_len = 1
