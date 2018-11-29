@@ -286,10 +286,16 @@ class SymbolicMachine:
                     state.stack_push(condition == BVV_0)
             elif op == 'AND':
                 s0, s1 = make_consistent(state.stack_pop(), state.stack_pop())
-                state.stack_push(s0 & s1)
+                if isinstance(s0, claripy.ast.Bool) and isinstance(s1, claripy.ast.Bool):
+                    state.stack_push(s0 and s1)
+                else:
+                    state.stack_push(s0 & s1)
             elif op == 'OR':
                 s0, s1 = make_consistent(state.stack_pop(), state.stack_pop())
-                state.stack_push(s0 | s1)
+                if isinstance(s0, claripy.ast.Bool) and isinstance(s1, claripy.ast.Bool):
+                    state.stack_push(s0 or s1)
+                else:
+                    state.stack_push(s0 | s1)
             elif op == 'XOR':
                 s0, s1 = make_consistent(state.stack_pop(), state.stack_pop())
                 state.stack_push(s0 ^ s1)
