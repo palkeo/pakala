@@ -446,6 +446,8 @@ class SymbolicMachine:
             elif op == 'MSIZE':
                 state.stack_push(bvv(state.memory.size()))
             elif op == 'SLOAD':
+                # TODO: This is inaccurate, because the storage can change in a single transaction.
+                # See commit d98cab834f8f359f01ef805256d179f5529ebe30.
                 key = state.stack_pop()
                 if key in state.storage_written:
                     state.stack_push(state.storage_written[key])
@@ -454,6 +456,8 @@ class SymbolicMachine:
                         state.storage_read[key] = claripy.BVS('storage[%s]' % key, 256)
                     state.stack_push(state.storage_read[key])
             elif op == 'SSTORE':
+                # TODO: This is inaccurate, because the storage can change in a single transaction.
+                # See commit d98cab834f8f359f01ef805256d179f5529ebe30.
                 key = state.stack_pop()
                 value = state.stack_pop()
                 state.storage_written[key] = value

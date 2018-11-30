@@ -84,18 +84,21 @@ class BaseAnalyzer(object):
         # Calls
         total_sent = sum(s.env.value for s in path)
         sent_constraints = [s.env.value < self.max_wei_to_send for s in path]
-        total_received = utils.bvv(0)
-        received_to = []
+        total_received_by_me = utils.bvv(0)
+        total_received_by_others = utils.bvv(0)
 
         for call in state.calls:
-            value, to, gas = call[-3:] # pylint: disable=unused-variable,invalid-name
-            # TODO: Not accurate. I need to add the equality as a constraint too.
+            value, to, gas = call[-3:]  # pylint: disable=unused-variable,invalid-name
             if state.solver.satisfiable(
                     extra_constraints=[to[159:0] == self.caller[159:0]]):
-                received_to.append(to)
-                total_received += value
+                state.solver.add(to[159:0] == self.caller[159:0])
+                total_received_by_me += value
+            else:
+                total_received_by_others += value
 
-        final_balance = path[0].env.balance + total_sent - total_received
+        final_balance = (
+                path[0].env.balance + total_sent
+                - total_received_by_me - total_received_by_others)
 
         # Suicide
         if state.suicide_to is not None:
@@ -107,15 +110,15 @@ class BaseAnalyzer(object):
                 logger.info("Found suicide bug.")
                 return True
 
-        if total_received is None:
+        if total_received_by_me is utils.bvv(0):
             return False
 
-        logger.debug("Found %i calls back to caller.", len(received_to))
+        logger.debug("Found calls back to caller: %s", total_received_by_me)
 
         constraints = sent_constraints + extra_constraints + read_constraints + [
             final_balance >= 0,
-            total_received > total_sent,  # I get more than what I sent?
-            total_received > self.min_wei_to_receive]
+            total_received_by_me > total_sent,  # I get more than what I sent?
+            total_received_by_me > self.min_wei_to_receive]
 
         logger.debug("Extra constraints: %r", constraints)
 

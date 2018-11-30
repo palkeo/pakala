@@ -17,34 +17,6 @@ from web3 import Web3
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('claripy').setLevel(logging.ERROR)
 
-class TestStateDone(unittest.TestCase):
-    """Test that a state already done is not processed again."""
-    def setUp(self):
-        self.env = Env(b'', caller=utils.DEFAULT_CALLER,
-                            address=utils.DEFAULT_ADDRESS)
-        self.empty_state = State(self.env)
-        self.state = State(self.env)
-        self.state.storage_written = {utils.bvv(0): utils.bvv(42)}
-        self.analyzer = RecursiveAnalyzer(
-            max_wei_to_send=Web3.toWei(10, 'ether'),
-            min_wei_to_receive=Web3.toWei(1, 'milliether'))
-        self.analyzer.reference_states.append(self.state)
-
-    def test_same(self):
-        """We search the same state."""
-        self.analyzer._search_path(self.empty_state, [self.state])
-        self.assertEqual(len(self.analyzer.path_queue), 1)
-        self.analyzer._search_path(self.empty_state.copy(), [self.state])
-        self.assertEqual(len(self.analyzer.path_queue), 1)
-
-    def test_successive_applications(self):
-        """We apply the same state two times."""
-        self.analyzer._search_path(self.empty_state, [self.state])
-        self.assertEqual(len(self.analyzer.path_queue), 1)
-        composite_state, path = self.analyzer.path_queue.popleft()
-        self.analyzer._search_path(composite_state, path)
-        self.assertEqual(len(self.analyzer.path_queue), 0)
-
 
 class TestCheckStates(unittest.TestCase):
     """The interesting tests.
