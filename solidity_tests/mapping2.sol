@@ -8,20 +8,20 @@ contract Mapping {
 
 
     function deposit(address beneficiary) public payable {
-        var b = participants[beneficiary];
+        Participant storage b = participants[beneficiary];
         b.total_paid += msg.value;
         b.payout += msg.value / 2;
     }
 
     function remove(uint amount, address beneficiary) public {
-        var b = participants[beneficiary];
+        Participant storage b = participants[beneficiary];
         require(b.payout > 0);
         require(b.total_paid > 0);
         b.payout -= amount;
     }
 
     function withdraw() public {
-        var p = participants[msg.sender];
+        Participant storage p = participants[msg.sender];
         require(p.payout > 1 ether);
         msg.sender.transfer(p.payout);
         p.payout = 0;

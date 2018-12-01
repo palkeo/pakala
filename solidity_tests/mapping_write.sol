@@ -1,5 +1,3 @@
-pragma solidity ^0.4.24;
-
 //This code is derived from the Capture the Ether https://capturetheether.com/challenges/math/mapping/
 
 contract Map {

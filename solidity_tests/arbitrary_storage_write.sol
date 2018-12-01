@@ -14,7 +14,7 @@ contract ArbitraryStorageWrite {
     people.length--;
   }
 
-  function () public payable {
+  function () external payable {
     require(magic == 42);
     selfdestruct(msg.sender);
   }

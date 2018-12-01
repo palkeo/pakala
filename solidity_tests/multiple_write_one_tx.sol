@@ -1,5 +1,3 @@
-pragma solidity ^0.4.23;
-
 contract MultipleWriteOneTx {
     uint256 private initialized = 0;
     uint256 public count = 0;
@@ -11,7 +9,7 @@ contract MultipleWriteOneTx {
         count++;
     }
 
-    function run(uint256 input) {
+    function run(uint256 input) public {
         require(count == 2);
         selfdestruct(msg.sender);
     }

@@ -1,5 +1,3 @@
-pragma solidity ^0.4.23;
-
 contract MultipleWriteMultipleTx {
     uint256 public count = 0;
 
@@ -7,7 +5,7 @@ contract MultipleWriteMultipleTx {
         count++;
     }
 
-    function run(uint256 input) {
+    function run(uint256 input) public {
         if (count < 2) {
             return;
         }

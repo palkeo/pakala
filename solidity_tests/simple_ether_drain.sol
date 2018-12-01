@@ -1,10 +1,10 @@
 contract SimpleEtherDrain {
 
-  function withdrawAllAnyone() {
-    msg.sender.transfer(this.balance);
+  function withdrawAllAnyone() public {
+    msg.sender.transfer(address(this).balance);
   }
 
-  function () public payable {
+  function () external payable {
   }
 
 }

@@ -9,7 +9,7 @@ contract Mapping {
     function deposit() public payable {
         require(msg.value > 0.1 ether);
 
-        var p = participants[msg.sender];
+        Participant storage p = participants[msg.sender];
         p.total_paid += msg.value;
         p.payout += msg.value;
     }
@@ -17,15 +17,15 @@ contract Mapping {
     function transfer(uint amount, address beneficiary) public {
         require(beneficiary != msg.sender);
 
-        var p = participants[msg.sender];
+        Participant storage p = participants[msg.sender];
         p.payout -= amount;
 
-        var b = participants[beneficiary];
+        Participant storage b = participants[beneficiary];
         b.payout += amount;
     }
 
     function withdraw() public returns (int) {
-        var p = participants[msg.sender];
+        Participant storage p = participants[msg.sender];
         require(p.payout > 0.1 ether && p.total_paid > 0);
         msg.sender.transfer(p.payout);
         p.payout = 0;

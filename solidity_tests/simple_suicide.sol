@@ -1,6 +1,6 @@
 contract SimpleSuicide {
 
-  function sudicideAnyone() {
+  function sudicideAnyone() public {
     selfdestruct(msg.sender);
   }
 
