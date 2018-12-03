@@ -1,5 +1,4 @@
 ethereum
 claripy
-requests
 mock
 web3
