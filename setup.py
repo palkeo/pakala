@@ -22,7 +22,7 @@ setup(
 
     author='palkeo',
 
-    author_email='eth@palkeo.com',
+    author_email='ethereum@palkeo.com',
 
     classifiers=[
         # How mature is this project? Common values are
