@@ -31,8 +31,6 @@ Advice: look at the calldata[0] to see the function signature for each transacti
 
 See ``./pakala.py help`` for more complete usage information.
 
-[![asciicast](https://asciinema.org/a/Z6gMwQ6yKrCsYS5MQhcVI8fYR.png)](https://asciinema.org/a/Z6gMwQ6yKrCsYS5MQhcVI8fYR)
-
 Installation
 ------------
 
@@ -118,4 +116,9 @@ Obviously it's biased towards what Pakala supports, as we don't include contract
 
 We test things like being able to write to an arbitrary storage location and overriding another
 variable, needing multiple transactions, mapping from address to variables, integer overflows...
+
+Demo
+----
+
+[![asciicast](https://asciinema.org/a/Z6gMwQ6yKrCsYS5MQhcVI8fYR.png)](https://asciinema.org/a/Z6gMwQ6yKrCsYS5MQhcVI8fYR)
 
