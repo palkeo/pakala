@@ -24,8 +24,8 @@ Usage
 -----
 
 Let's look at [0x612f1BDbe93523b7f5036EfA87493B76341726E3](https://etherscan.io/address/0x612f1bdbe93523b7f5036efa87493b76341726e3): the
-constructor doesn't have the same name as the contract: anybody can call HT() and become owner,
-then call withdraw.
+constructor doesn't have the same name as the contract.
+Anybody can call HT() and become owner, then call withdraw.
 
 Let's scan it:
 
@@ -36,9 +36,11 @@ Let's scan it:
 The contract balance being 0, we won't be able to have it send us some ethers.
 So we override the balance to be 1 ETH: then it has some "virtual" money to send us.
 
-The tool with tell you a bug was found, and dump you a path of "states" (each state
-being a transaction, with the associated constraints you need to respect).
-Advice: look at the calldata[0] to see the function signature for each transaction.
+The tool with tell you a bug was found, and dump you a path of "states". Each
+state corresponds to a transaction, with constraints that needs to be respected
+for that code path to be taken, storage that has been read/written...
+
+Advice: look at ``calldata[0]`` in the constraints to see the function signature for each transaction.
 
 See ``./pakala.py help`` for more complete usage information.
 
