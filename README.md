@@ -8,9 +8,6 @@ Pakala
 
 The intended public for the tool are security researchers interested by Ethereum / the EVM.
 
-Installation
-------------
-
 Usage
 -----
 
@@ -43,8 +40,8 @@ It basically looks for ways to get money out of the contract, into an address th
 attacker control. That's the most obvious kind of vulnerability that people would
 seek to exploit.
 
-Goals
------
+How does it work
+----------------
 
 This tool operates at the level of EVM bytecode, and aims at being
 agnostic to higher-level languages.
@@ -61,9 +58,6 @@ For simplicity, there is no CFG analysis or anything. It just execute the code s
 
 It also does a bit of "fuzzing", to unblock itself in certain situations when
 pure symbols would not work. That means it tries various concrete values.
-
-How does it work
-----------------
 
 It is made of two independent layers:
 
@@ -96,14 +90,17 @@ recursively calls other contracts and does everything in one step.
 Because Pakala has these two independent steps it doesn't support calling
 other contracts, but this has the upside of being able to build a list of
 valid executions that the second step can stack. That's much faster if you
-want to go deeper in the number of transactions you can stack.
+want to go deeper in the number of transactions.
+
+It also give better support for simple contracts that read and write storage,
+and where you need to chain multiple transactions.
 
 We have a solidity test suite with various simple contracts that are vulnerable (``solidity_tests/``):
 
-* pakala found bugs in: 12/12 (``python -m unittest discover solidity_tests/``)
-* mythril found bugs in: 7/12 (``ulimit -Sv 5000000; for i in solidity_tests/*.sol; do echo $i && ../mythril/myth -mether_thief,suicide -x $i -t4 --execution-timeout 600; done``)
+* Pakala found bugs in: 12/12 (``python -m unittest discover solidity_tests/``)
+* Mythril found bugs in: 6/12 (``ulimit -Sv 5000000; for i in solidity_tests/*.sol; do echo $i && ../mythril/myth -mether_thief,suicide -x $i -t4 --execution-timeout 600; done``)
 
-Obviously it's biased towards what pakala support, as we don't include contracts calling other contracts, for example.
+Obviously it's biased towards what Pakala supports, as we don't include contracts calling other contracts, for example.
 
 We test things like being able to write to an arbitrary storage location and overriding another
 variable, needing multiple transactions, mapping from address to variables, integer overflows...
