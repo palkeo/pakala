@@ -1,3 +1,21 @@
+"""
+    pakala: EVM symbolic execution tool and vulnerability scanner.
+    Copyright (C) 2018 Korantin Auguste
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import collections
 import datetime
 import heapq
@@ -517,7 +535,7 @@ class SymbolicMachine:
             if coverage > last_coverage:
                 time_last_coverage_increase = time.process_time()
                 logger.log(utils.INFO_INTERACTIVE,
-                           "Coverage went from %i to %i.", last_coverage, coverage)
+                           "Coverage is now %i.", coverage)
                 last_coverage = coverage
 
             if ((not timeout_sec and time.process_time() - time_last_coverage_increase > max(60, time_last_coverage_increase - time_start))

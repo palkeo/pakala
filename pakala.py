@@ -1,3 +1,20 @@
+"""
+    pakala: EVM symbolic execution tool and vulnerability scanner.
+    Copyright (C) 2018 Korantin Auguste
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
 import argparse
 import codecs
 import datetime
@@ -92,7 +109,7 @@ analyzer.add_argument(
 args = parser.parse_args()
 
 try:
-    logger.debug("Node working. Block %i ", w3.eth.blockNumber)
+    logging.debug("Node working. Block %i ", w3.eth.blockNumber)
 except web3.exceptions.UnhandledRequest:
     err_exit("Seems like Web3.py can't connect to your Ethereum node.\n"
              "If you don't have one and you want to use Infura, you can set "
@@ -175,10 +192,11 @@ bug = ra.check_states(
 
 if bug:
     print("=================== Bug found! ===================")
-    print('Composite state:')
-    pprint.pprint(bug[0].as_dict())
-    print()
-    print()
+    if logging.getLogger().isEnabledFor(logging.DEBUG):
+        print('Composite state:')
+        pprint.pprint(bug[0].as_dict())
+        print()
+        print()
     print('Path:')
     for state in bug[1]:
         print()

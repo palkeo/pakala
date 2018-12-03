@@ -11,13 +11,27 @@ The intended public for the tool are security researchers interested by Ethereum
 Usage
 -----
 
-Example use on a contract, where at that block you could steal money from:
+Let's look at this contract: https://etherscan.io/address/0x612f1bdbe93523b7f5036efa87493b76341726e3
+
+The constructor doesn't have the same name as the contract: anybody can call HT() and become owner,
+then call withdraw.
+
+Example use on that contract:
 
 ```
-./pakala.py 0xF55A32f0107523c14027C4a1e6177cD7291395A0 --block 5790628 --exec-timeout 600
+./pakala.py 0x612f1BDbe93523b7f5036EfA87493B76341726E3 --force-balance="1 ether"
 ```
 
-See ``./pakala.py`` help for more complete usage information.
+The contract balance being 0, we won't be able to have it send us some ethers. So
+we say the balance is 1 ETH instead, so it has some money to send us.
+
+The tool with tell you a bug was found, and dump you a path of "states" (each state
+being a transaction, with the associated constraints you need to respect).
+Advice: look at the calldata[0] to see the function signature for each transaction.
+
+See ``./pakala.py help`` for more complete usage information.
+
+[![asciicast](https://asciinema.org/a/Z6gMwQ6yKrCsYS5MQhcVI8fYR.png)](https://asciinema.org/a/Z6gMwQ6yKrCsYS5MQhcVI8fYR)
 
 Installation
 ------------
