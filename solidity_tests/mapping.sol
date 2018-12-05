@@ -18,6 +18,13 @@ contract Mapping {
         require(beneficiary != msg.sender);
 
         Participant storage p = participants[msg.sender];
+
+        // The following require will always hold because we are substracting
+        // two uint...
+        require(p.payout - amount > 0);
+        // This would be better:
+        //require((int)(p.payout) - (int)(amount) > 0 && (int)(amount) > 0);
+
         p.payout -= amount;
 
         Participant storage b = participants[beneficiary];
