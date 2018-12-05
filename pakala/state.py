@@ -11,9 +11,10 @@ class State(object):
     """Represents a state during the execution of a contract.
     It also contains the interactions with the world.
     """
+
     def __init__(self, env=None):
         self.env = env
-        self.pc = 0 # pylint:disable=invalid-name
+        self.pc = 0  # pylint:disable=invalid-name
         self.stack = []
 
         # TODO: explain
@@ -35,18 +36,27 @@ class State(object):
         self.solver = utils.get_solver()
 
     def __repr__(self):
-        return ("State(suicide_to=%s, calls=%s, storage_written=%s, "
-                "storage_read=%s, env=%s, solver=%s)") % (
-                    self.suicide_to, self.calls, self.storage_written,
-                    self.storage_read, self.env, self.solver)
+        return (
+            "State(suicide_to=%s, calls=%s, storage_written=%s, "
+            "storage_read=%s, env=%s, solver=%s)"
+        ) % (
+            self.suicide_to,
+            self.calls,
+            self.storage_written,
+            self.storage_read,
+            self.env,
+            self.solver,
+        )
 
     def as_dict(self):
-        return {'suicide_to': self.suicide_to,
-                'calls': self.calls,
-                'storage_written': self.storage_written,
-                'storage_read': self.storage_read,
-                'env': None if self.env is None else self.env.as_dict(),
-                'solver': self.solver.as_dict()}
+        return {
+            "suicide_to": self.suicide_to,
+            "calls": self.calls,
+            "storage_written": self.storage_written,
+            "storage_read": self.storage_read,
+            "env": None if self.env is None else self.env.as_dict(),
+            "solver": self.solver.as_dict(),
+        }
 
     def clean(self):
         """Clean the state, when it won't be executed anymore and we are only
@@ -66,25 +76,20 @@ class State(object):
         derived from Env.replace(), to substitute an environment with another.
         """
         logger.debug("State.replace %s", r)
-        self.storage_written = {
-            r(k): r(v)
-            for k, v in self.storage_written.items()}
-        self.storage_read = {
-            r(k): r(v)
-            for k, v in self.storage_read.items()}
+        self.storage_written = {r(k): r(v) for k, v in self.storage_written.items()}
+        self.storage_read = {r(k): r(v) for k, v in self.storage_read.items()}
         self.calls = [[r(i) for i in call] for call in self.calls]
         self.suicide_to = None if self.suicide_to is None else r(self.suicide_to)
 
         # TODO: Do something cleaner! This work only with our custom solver mixin.
         self.solver.replace(r)
-        #constraints = [r(i) for i in self.solver.constraints]
-        #self.solver = utils.get_solver()
-        #for c in constraints:
+        # constraints = [r(i) for i in self.solver.constraints]
+        # self.solver = utils.get_solver()
+        # for c in constraints:
         #    self.solver.add(c)
 
     def __hash__(self):
-        l = [hash(self.env), hash(self.pc), hash(self.memory),
-             hash(self.suicide_to)]
+        l = [hash(self.env), hash(self.pc), hash(self.memory), hash(self.suicide_to)]
         for i in self.stack:
             l.append(hash(i))
         for call in self.calls:
@@ -114,9 +119,7 @@ class State(object):
         return self.stack.pop()
 
     def is_interesting(self):
-        return bool(self.storage_written
-                    or self.calls
-                    or self.suicide_to is not None)
+        return bool(self.storage_written or self.calls or self.suicide_to is not None)
 
     def copy(self):
         """Make a shallow copy of the current environment. Needs to be fast."""
@@ -134,11 +137,12 @@ class State(object):
 
     # TODO(palkeo): Get rid of that. Needed because of heapq in sm.py...
     def __eq__(self, other):
-      return 1
+        return 1
+
     def __ne__(self, other):
-      return 0
+        return 0
+
     __lt__ = __ne__
     __gt__ = __ne__
     __ge__ = __eq__
     __le__ = __eq__
-

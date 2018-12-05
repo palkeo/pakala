@@ -22,9 +22,9 @@ class TestMemory(unittest.TestCase):
         self.assertBEqual(self.mem.read(1, 1), 0)
 
     def overwrite(self, a, b):
-        self.mem.write(a[0], a[1], claripy.BVV(0x42, a[1]*8))
+        self.mem.write(a[0], a[1], claripy.BVV(0x42, a[1] * 8))
         self.assertBEqual(self.mem.read(a[0], a[1]), 0x42)
-        self.mem.write(b[0], b[1], claripy.BVV(0x01020304, b[1]*8))
+        self.mem.write(b[0], b[1], claripy.BVV(0x01020304, b[1] * 8))
         self.assertBEqual(self.mem.read(b[0], b[1]), 0x01020304)
         self.assertBNotEqual(self.mem.read(a[0], a[1]), 0x42)
 
@@ -59,7 +59,7 @@ class TestMemory(unittest.TestCase):
         self.assertBEqual(self.mem.read(5, 1), 0x63)
 
     def test_overwrite_inside(self):
-        self.mem.write(10, 6, claripy.BVV(0x112233445566, 8*6))
+        self.mem.write(10, 6, claripy.BVV(0x112233445566, 8 * 6))
         self.mem.write(12, 2, claripy.BVV(0x3040, 16))
         self.assertBEqual(self.mem.read(10, 6), 0x112230405566)
 
@@ -79,10 +79,10 @@ class TestMemory(unittest.TestCase):
         self.assertBEqual(self.mem.read(0, 11), 0x1122334400005566778800)
 
     def test_read(self):
-        self.mem.write(10, 4, claripy.BVV(0xaabbccdd, 32))
-        self.assertBEqual(self.mem.read(8, 4), 0x0000aabb)
-        self.assertBEqual(self.mem.read(12, 4), 0xccdd0000)
-        self.assertBEqual(self.mem.read(11, 2), 0xbbcc)
+        self.mem.write(10, 4, claripy.BVV(0xAABBCCDD, 32))
+        self.assertBEqual(self.mem.read(8, 4), 0x0000AABB)
+        self.assertBEqual(self.mem.read(12, 4), 0xCCDD0000)
+        self.assertBEqual(self.mem.read(11, 2), 0xBBCC)
         self.assertBEqual(self.mem.read(9, 1), 0)
         self.assertBEqual(self.mem.read(14, 1), 0)
 
@@ -93,7 +93,7 @@ class TestMemory(unittest.TestCase):
 
     def test_size(self):
         self.assertEqual(self.mem.size(), 0)
-        self.mem.write(10, 4, claripy.BVV(42, 4*8))
+        self.mem.write(10, 4, claripy.BVV(42, 4 * 8))
         self.assertEqual(self.mem.size(), 14)
 
     def test_copy(self):
@@ -145,9 +145,9 @@ class TestCalldataMemory(unittest.TestCase):
 
     def test_readonly(self):
         with self.assertRaises(AssertionError):
-            self.mem.write(0,1,None)
+            self.mem.write(0, 1, None)
         with self.assertRaises(AssertionError):
-            self.mem.copy_from(0,1,None)
+            self.mem.copy_from(0, 1, None)
 
     def test_read_default(self):
         r = self.mem.read(0, 1)

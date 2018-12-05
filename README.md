@@ -47,4 +47,4 @@ See ``./pakala.py help`` for more complete usage information.
 How does it works? What does it do?
 -----------------------------------
 
-See the [introductory article](https://www.palkeo.com/projets/ethereum/pakala.html) for more information.
+See the [introductory article](https://www.palkeo.com/projets/ethereum/pakala.html) for more information and a demo.

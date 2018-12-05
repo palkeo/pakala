@@ -19,7 +19,7 @@ class BaseAnalyzer(object):
     Child classes need to define `caller` and `address`.
     """
 
-    def __init__(self, max_wei_to_send, min_wei_to_receive, block='latest'):
+    def __init__(self, max_wei_to_send, min_wei_to_receive, block="latest"):
         self.web3 = Web3()
         self.web3.eth.defaultBlock = block
         self.max_wei_to_send = max_wei_to_send
@@ -43,16 +43,15 @@ class BaseAnalyzer(object):
         except claripy.errors.UnsatError as e:
             # Should not be too bad, because for the same key we will reuse the
             # same cache.
-            logger.debug(
-                "Encountered an exception when resolving key %r: %r", key, e)
+            logger.debug("Encountered an exception when resolving key %r: %r", key, e)
             return utils.bvv(0)
 
         if key in self.storage_cache:
             value = self.storage_cache[key]
         else:
             hex_addr = self.web3.toChecksumAddress(
-                    utils.number_to_address(
-                        utils.bvv_to_number(self.address)))
+                utils.number_to_address(utils.bvv_to_number(self.address))
+            )
             value = self.web3.toInt(self.web3.eth.getStorageAt(hex_addr, key))
             self.storage_cache[key] = value
 
@@ -79,7 +78,8 @@ class BaseAnalyzer(object):
             extra_constraints += s.env.extra_constraints()
             extra_constraints += [
                 s.env.caller == utils.DEFAULT_CALLER,
-                s.env.origin == utils.DEFAULT_CALLER]
+                s.env.origin == utils.DEFAULT_CALLER,
+            ]
 
         # Calls
         total_sent = sum(s.env.value for s in path)
@@ -90,21 +90,30 @@ class BaseAnalyzer(object):
         for call in state.calls:
             value, to, gas = call[-3:]  # pylint: disable=unused-variable,invalid-name
             if state.solver.satisfiable(
-                    extra_constraints=[to[159:0] == self.caller[159:0]]):
+                extra_constraints=[to[159:0] == self.caller[159:0]]
+            ):
                 state.solver.add(to[159:0] == self.caller[159:0])
                 total_received_by_me += value
             else:
                 total_received_by_others += value
 
         final_balance = (
-                path[0].env.balance + total_sent
-                - total_received_by_me - total_received_by_others)
+            path[0].env.balance
+            + total_sent
+            - total_received_by_me
+            - total_received_by_others
+        )
 
         # Suicide
         if state.suicide_to is not None:
-            constraints = extra_constraints + read_constraints + [
-                final_balance >= self.min_wei_to_receive,
-                state.suicide_to[159:0] == self.caller[159:0]]
+            constraints = (
+                extra_constraints
+                + read_constraints
+                + [
+                    final_balance >= self.min_wei_to_receive,
+                    state.suicide_to[159:0] == self.caller[159:0],
+                ]
+            )
             logger.debug("Check for suicide bug with constraints %s", constraints)
             if state.solver.satisfiable(extra_constraints=constraints):
                 logger.info("Found suicide bug.")
@@ -115,10 +124,16 @@ class BaseAnalyzer(object):
 
         logger.debug("Found calls back to caller: %s", total_received_by_me)
 
-        constraints = sent_constraints + extra_constraints + read_constraints + [
-            final_balance >= 0,
-            total_received_by_me > total_sent,  # I get more than what I sent?
-            total_received_by_me > self.min_wei_to_receive]
+        constraints = (
+            sent_constraints
+            + extra_constraints
+            + read_constraints
+            + [
+                final_balance >= 0,
+                total_received_by_me > total_sent,  # I get more than what I sent?
+                total_received_by_me > self.min_wei_to_receive,
+            ]
+        )
 
         logger.debug("Extra constraints: %r", constraints)
 
@@ -146,8 +161,10 @@ class FakeStorage(dict):
 
     def __contains__(self, key):
         if not super().__contains__(key):
-            raise KeyError("The analyzer is trying to access a FakeStorage"
-                           " key that we didn't specify: '%s'." % key)
+            raise KeyError(
+                "The analyzer is trying to access a FakeStorage"
+                " key that we didn't specify: '%s'." % key
+            )
         return True
 
 
@@ -160,4 +177,3 @@ class EmptyStorage(object):
 
     def __getitem__(self, key):
         return 0
-

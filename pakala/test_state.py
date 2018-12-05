@@ -8,7 +8,7 @@ from pakala import env
 
 class TestState(unittest.TestCase):
     def testHashWorks(self):
-        state = State(env.Env(b''))
+        state = State(env.Env(b""))
         state.pc = 5
         state.memory.write(0, 1, claripy.BVV(42, 8))
         state.memory.write(10, 1, claripy.BVV(43, 8))
@@ -48,7 +48,7 @@ class TestState(unittest.TestCase):
         self.assertEqual(hash(a), hash(b))
 
     def testReplace(self):
-        old_env = env.Env(b'')
+        old_env = env.Env(b"")
         new_env = old_env.clean_copy()
         state = State(new_env)
         state.storage_written[old_env.caller] = old_env.value

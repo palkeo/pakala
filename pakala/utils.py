@@ -9,6 +9,7 @@ import claripy
 from ethereum import opcodes
 from ethereum import utils
 from ethereum import vm
+
 logging._loggerClass = logging.Logger  # Counter-hack to fix the logging monkey-patch.
 
 from pakala import claripy_sha3
@@ -17,10 +18,10 @@ from pakala import claripy_sha3
 INFO_INTERACTIVE = 19
 logging.addLevelName(INFO_INTERACTIVE, "INFO_INTERACTIVE")
 
-ADDR_MASK = 0xffffffffffffffffffffffffffffffffffffffff
+ADDR_MASK = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
-DEFAULT_ADDRESS = claripy.BVV(0xcafebabeffffffffffffffffffffff7cff7247c9, 256)
-DEFAULT_CALLER = claripy.BVV(0xcafebabefffffffff0202fffffffff7cff7247c9, 256)
+DEFAULT_ADDRESS = claripy.BVV(0xCAFEBABEFFFFFFFFFFFFFFFFFFFFFF7CFF7247C9, 256)
+DEFAULT_CALLER = claripy.BVV(0xCAFEBABEFFFFFFFFF0202FFFFFFFFF7CFF7247C9, 256)
 
 
 class CodeError(Exception):
@@ -42,7 +43,7 @@ def get_solver():
 
 
 def int_to_bytes(v, size):
-    b = b''
+    b = b""
     while v:
         b = bytearray((v % 256,)) + b
         v = v // 256
@@ -70,8 +71,8 @@ def disassemble(ocode):
             # opcodes[] is like ['opcode', nb_input, nb_output, gas, opcode, param]
             instr = opcodes.opcodes[utils.safe_ord(ocode[i])][0]
         except KeyError:
-            instr = 'INVALID 0x%x' % utils.safe_ord(ocode[i])
-        if instr.startswith('PUSH'):
+            instr = "INVALID 0x%x" % utils.safe_ord(ocode[i])
+        if instr.startswith("PUSH"):
             code.append(instr)
             code.append(pushcache[i])
             for x in range(int(instr[4:]) - 1):
@@ -86,14 +87,14 @@ def disassemble(ocode):
 
 def hex_to_bytes(code):
     code = code.strip()
-    if not re.match('^(0x)?[0-9a-zA-Z]*$', code):
+    if not re.match("^(0x)?[0-9a-zA-Z]*$", code):
         raise ValueError("Invalid code.")
-    if code.startswith('0x'):
+    if code.startswith("0x"):
         code = code[2:]
-    groups = [code[n:n+2] for n in range(0, len(code), 2)]
+    groups = [code[n : n + 2] for n in range(0, len(code), 2)]
     # The bytes(bytearray()) is for python2-compatibility.
     return bytes(bytearray(int(i, 16) for i in groups if len(i) == 2))
 
 
 def number_to_address(number):
-    return '{:#042x}'.format(number)
+    return "{:#042x}".format(number)

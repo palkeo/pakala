@@ -11,14 +11,15 @@ MEMORY_SIZE = 4096
 
 
 def _slice(v, start, end):
-    start = v.size() - start*8 - 1
-    end = 0 if end is None else (v.size() - end*8)
+    start = v.size() - start * 8 - 1
+    end = 0 if end is None else (v.size() - end * 8)
     assert end >= 0 and start >= 0 and end <= start
     return v[start:end]
 
 
 class Memory(object):
     """Base class for memory. Uninitialized memory is zero initially."""
+
     def __init__(self):
         self._mem = {}
 
@@ -26,11 +27,10 @@ class Memory(object):
         return str(self._mem)
 
     def __hash__(self):
-        return hash(tuple(
-            hash(k) ^ hash(v) for k, v in self._mem.items()))
+        return hash(tuple(hash(k) ^ hash(v) for k, v in self._mem.items()))
 
     def _default(self, addr, size):
-        return claripy.BVV(0, size*8)
+        return claripy.BVV(0, size * 8)
 
     def read(self, addr, size):
         if size < 1:
@@ -45,13 +45,17 @@ class Memory(object):
             rend = iaddr + isize - addr
             # completely overlaps (or equals)
             if raddr <= 0 and rend >= size:
-                return _slice(ivalue, -raddr, -raddr+size)
+                return _slice(ivalue, -raddr, -raddr + size)
             # completely inside (strictly)
             elif raddr > 0 and rend < size:
-                return self.read(addr, raddr).concat(self.read(addr + raddr, size - raddr))
+                return self.read(addr, raddr).concat(
+                    self.read(addr + raddr, size - raddr)
+                )
             # end inside
             elif 0 < rend < size:
-                return _slice(ivalue, isize - rend, None).concat(self.read(addr + rend, size - rend))
+                return _slice(ivalue, isize - rend, None).concat(
+                    self.read(addr + rend, size - rend)
+                )
             # start inside
             elif 0 < raddr < size:
                 return self.read(addr, raddr).concat(_slice(ivalue, 0, size - raddr))
@@ -68,7 +72,9 @@ class Memory(object):
         if value.size() // 8 != size:
             raise utils.InterpreterError("BVV size doesn't match size in Memory.write")
 
-        logger.debug("%s.write(%i, %i, %r)" % (self.__class__.__name__, addr, size, value))
+        logger.debug(
+            "%s.write(%i, %i, %r)" % (self.__class__.__name__, addr, size, value)
+        )
 
         for iaddr, ivalue in list(self._mem.items()):
             isize = ivalue.size() // 8
@@ -81,7 +87,7 @@ class Memory(object):
             elif raddr <= 0 and rend >= size:
                 if raddr < 0:
                     self._mem[iaddr] = _slice(ivalue, 0, -raddr)
-                self._mem[addr + size] = _slice(ivalue, -raddr+size, None)
+                self._mem[addr + size] = _slice(ivalue, -raddr + size, None)
             # completely inside (not strictly)
             elif raddr >= 0 and rend <= size:
                 del self._mem[iaddr]
@@ -119,8 +125,9 @@ class Memory(object):
 
 class CalldataMemory(Memory):
     """Same as Memory, except that uninitialized memory is set to a BVS."""
+
     def _default(self, addr, size):
-        return claripy.BVS('calldata[%i]' % addr, size*8)
+        return claripy.BVS("calldata[%i]" % addr, size * 8)
 
     def write(self, *args, **kwargs):
         assert False, "CalldataMemory is read-only."
@@ -132,14 +139,15 @@ class CalldataMemory(Memory):
 class CalldataMemoryView(object):
     """Element to be put in memory like a Claripy BV, but is a view to a part
     of another memory."""
+
     def __init__(self, mem, addr, size):
         self._mem = mem
         self._addr = addr
         self._size = size
 
     def __hash__(self):
-      # TODO: The hash may change even if the part in the view don't...
-      return hash(self._mem)
+        # TODO: The hash may change even if the part in the view don't...
+        return hash(self._mem)
 
     def size(self):
         return self._size * 8

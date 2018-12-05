@@ -8,18 +8,19 @@ from pakala import memory
 from pakala import utils
 
 ENV_VARS = (
-    ('caller', None, None),
-    ('origin', None, None),
-    ('value', None, 10**20),
-    ('address', None, None),
-    ('balance', None, None),
-    ('gas', None, None),
-    ('block_timestamp', int(time.time()), int(time.time() + 86400*365)),
-    ('block_number', 6000000, 10**9),
-    ('calldata_size', None, 2**20),
-    ('coinbase', None, None),
-    ('difficulty', None, None),
+    ("caller", None, None),
+    ("origin", None, None),
+    ("value", None, 10 ** 20),
+    ("address", None, None),
+    ("balance", None, None),
+    ("gas", None, None),
+    ("block_timestamp", int(time.time()), int(time.time() + 86400 * 365)),
+    ("block_number", 6000000, 10 ** 9),
+    ("calldata_size", None, 2 ** 20),
+    ("coinbase", None, None),
+    ("difficulty", None, None),
 )
+
 
 class Env(object):
     def __init__(self, code, **kwargs):
@@ -33,12 +34,13 @@ class Env(object):
 
     def __repr__(self):
         return "Env(balance=%s, caller=%s, value=%s)" % (
-            self.balance, self.caller, self.value)
+            self.balance,
+            self.caller,
+            self.value,
+        )
 
     def as_dict(self):
-        return {'balance': self.balance,
-                'caller': self.caller,
-                'value': self.value}
+        return {"balance": self.balance, "caller": self.caller, "value": self.value}
 
     def clean_copy(self):
         """Create a new env, which is a copy of the current one but with
@@ -54,8 +56,9 @@ class Env(object):
 
         new_env.calldata = self.calldata.copy()
         for addr, value in self.calldata._mem.items():
-            new_env.calldata._mem[addr] = (
-                claripy.BVS('calldata[%i]' % addr, value.size()))
+            new_env.calldata._mem[addr] = claripy.BVS(
+                "calldata[%i]" % addr, value.size()
+            )
 
         # Block hashes are always the same (but the current number can change)
         new_env.block_hashes = self.block_hashes.copy()
@@ -76,7 +79,6 @@ def replace(old_env, new_env, var):
         var = var.replace(getattr(old_env, name), getattr(new_env, name))
 
     for addr in old_env.calldata._mem.keys():
-        var = var.replace(old_env.calldata._mem[addr],
-                          new_env.calldata._mem[addr])
+        var = var.replace(old_env.calldata._mem[addr], new_env.calldata._mem[addr])
 
     return var

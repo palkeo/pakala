@@ -42,79 +42,103 @@ def err_exit(message):
 
 
 def ethWeiAmount(arg):
-    m = re.match(r'^([0-9.]+) ?(\w+)$', arg)
+    m = re.match(r"^([0-9.]+) ?(\w+)$", arg)
     if m is None:
         raise argparse.ArgumentError(
-            "The argument must be in the form '1 ether' for example.")
+            "The argument must be in the form '1 ether' for example."
+        )
     return Web3.toWei(float(m.group(1)), m.group(2))
 
 
 parser = argparse.ArgumentParser(
-    description="Find exploitable Ethereum smart contracts.")
+    description="Find exploitable Ethereum smart contracts."
+)
 
 parser.add_argument(
-        "contract_addr",
-        help="Address of the contract to analyze. "
-             "Use '-' for reading runtime bytecode from stdin instead.")
+    "contract_addr",
+    help="Address of the contract to analyze. "
+    "Use '-' for reading runtime bytecode from stdin instead.",
+)
 parser.add_argument(
-        '-v',
-        default=str(utils.INFO_INTERACTIVE),
-        help='log level (INFO, DEBUG...)',
-        metavar='LOG_LEVEL')
+    "-v",
+    default=str(utils.INFO_INTERACTIVE),
+    help="log level (INFO, DEBUG...)",
+    metavar="LOG_LEVEL",
+)
 parser.add_argument(
-        '-s', '--summarize',
-        action='store_true',
-        help='enable summarizer (EXPERIMENTAL)')
+    "-s", "--summarize", action="store_true", help="enable summarizer (EXPERIMENTAL)"
+)
 
 limits = parser.add_argument_group("time/depth limits")
 limits.add_argument(
-        "--exec-timeout",
-        help="Timeout in seconds for the symbolic execution stage. Use 0 for a system that will stop when the last coverage increase was too long ago.",
-        type=int, default=0, metavar='SECONDS')
+    "--exec-timeout",
+    help="Timeout in seconds for the symbolic execution stage. Use 0 for a system that will stop when the last coverage increase was too long ago.",
+    type=int,
+    default=0,
+    metavar="SECONDS",
+)
 limits.add_argument(
-        "--analysis-timeout",
-        help="Timeout in seconds for the analysis stage (that will stack the executions and find bugs). Use 0 to disable timeout and use only depth limit.",
-        type=int, default=0, metavar='SECONDS')
+    "--analysis-timeout",
+    help="Timeout in seconds for the analysis stage (that will stack the executions and find bugs). Use 0 to disable timeout and use only depth limit.",
+    type=int,
+    default=0,
+    metavar="SECONDS",
+)
 limits.add_argument(
-        "--max-transaction-depth",
-        help="Maximum number of outcomes that can be fused together during the analysis step.",
-        type=int, default=4)
+    "--max-transaction-depth",
+    help="Maximum number of outcomes that can be fused together during the analysis step.",
+    type=int,
+    default=4,
+)
 
 
-environment = parser.add_argument_group('environment')
+environment = parser.add_argument_group("environment")
 environment.add_argument(
-        '-b', '--force-balance',
-        type=ethWeiAmount,
-        help="Don't use the current contract balance, instead force it to a value.", metavar="BALANCE")
+    "-b",
+    "--force-balance",
+    type=ethWeiAmount,
+    help="Don't use the current contract balance, instead force it to a value.",
+    metavar="BALANCE",
+)
 environment.add_argument(
-        '-B', '--block',
-        default='latest',
-        type=lambda block_number: hex(int(block_number)) if block_number.isnumeric() else block_number,
-        help="Use the code/balance/storage at that block instead of latest.")
+    "-B",
+    "--block",
+    default="latest",
+    type=lambda block_number: hex(int(block_number))
+    if block_number.isnumeric()
+    else block_number,
+    help="Use the code/balance/storage at that block instead of latest.",
+)
 
-analyzer = parser.add_argument_group('analyzer tweaks')
+analyzer = parser.add_argument_group("analyzer tweaks")
 analyzer.add_argument(
-        '-m', '--min-to-receive',
-        type=ethWeiAmount,
-        default="1 milliether",
-        help="Minimum amount to receive from the contract to consider it a bug.",
-        metavar="BALANCE")
+    "-m",
+    "--min-to-receive",
+    type=ethWeiAmount,
+    default="1 milliether",
+    help="Minimum amount to receive from the contract to consider it a bug.",
+    metavar="BALANCE",
+)
 analyzer.add_argument(
-        '-M', '--max-to-send',
-        type=ethWeiAmount,
-        default="10 ether",
-        help="Maximum amount allowed to send to the contract (even if we would receive more).",
-        metavar="BALANCE")
+    "-M",
+    "--max-to-send",
+    type=ethWeiAmount,
+    default="10 ether",
+    help="Maximum amount allowed to send to the contract (even if we would receive more).",
+    metavar="BALANCE",
+)
 
 args = parser.parse_args()
 
 try:
     logging.debug("Node working. Block %i ", w3.eth.blockNumber)
 except web3.exceptions.UnhandledRequest:
-    err_exit("Seems like Web3.py can't connect to your Ethereum node.\n"
-             "If you don't have one and you want to use Infura, you can set "
-             "WEB3_PROVIDER_URI as follows:\n"
-             "$ export WEB3_PROVIDER_URI='https://mainnet.infura.io'")
+    err_exit(
+        "Seems like Web3.py can't connect to your Ethereum node.\n"
+        "If you don't have one and you want to use Infura, you can set "
+        "WEB3_PROVIDER_URI as follows:\n"
+        "$ export WEB3_PROVIDER_URI='https://mainnet.infura.io'"
+    )
 
 if args.v.isnumeric():
     logging.basicConfig(level=int(args.v))
@@ -123,54 +147,66 @@ elif hasattr(logging, args.v.upper()):
 else:
     err_exit("Logging should be DEBUG/INFO/WARNING/ERROR.")
 
-if args.contract_addr == '-':
+if args.contract_addr == "-":
     # Let's read the runtime bytecode from stdin
-    code = sys.stdin.read().strip('\n')
+    code = sys.stdin.read().strip("\n")
     if not code.isalnum():
         err_exit("Runtime bytecode read from stdin needs to be hexadecimal.")
-    code = codecs.decode(code, 'hex')
+    code = codecs.decode(code, "hex")
     # Dummy address, dummy balance
-    args.contract_addr = '0xDEADBEEF00000000000000000000000000000000'
+    args.contract_addr = "0xDEADBEEF00000000000000000000000000000000"
     if not args.force_balance:
-        args.force_balance = Web3.toWei(1.337, 'ether')
+        args.force_balance = Web3.toWei(1.337, "ether")
 else:
     code = w3.eth.getCode(args.contract_addr, block_identifier=args.block)
 
-balance = (args.force_balance
-           or w3.eth.getBalance(args.contract_addr, block_identifier=args.block))
+balance = args.force_balance or w3.eth.getBalance(
+    args.contract_addr, block_identifier=args.block
+)
 
-print("Analyzing contract at %s with balance %f ether."
-      % (args.contract_addr, Web3.fromWei(balance, 'ether')))
+print(
+    "Analyzing contract at %s with balance %f ether."
+    % (args.contract_addr, Web3.fromWei(balance, "ether"))
+)
 
 if balance < args.min_to_receive:
-    err_exit("Balance is smaller than --min-wei-to-receive: "
-             "the analyzer will never find anything.")
+    err_exit(
+        "Balance is smaller than --min-wei-to-receive: "
+        "the analyzer will never find anything."
+    )
 
 if args.summarize:
-    logging.info("Summarizer enabled, we won't constrain the caller/origin "
-                 "so more of the contract can get explored. "
-                 "It may be slower.")
-    e = env.Env(code,
-                address=utils.bvv(int(args.contract_addr, 16)),
-                balance=utils.bvv(balance))
+    logging.info(
+        "Summarizer enabled, we won't constrain the caller/origin "
+        "so more of the contract can get explored. "
+        "It may be slower."
+    )
+    e = env.Env(
+        code, address=utils.bvv(int(args.contract_addr, 16)), balance=utils.bvv(balance)
+    )
 else:
-    e = env.Env(code,
-                address=utils.bvv(int(args.contract_addr, 16)),
-                caller=utils.DEFAULT_CALLER,
-                origin=utils.DEFAULT_CALLER,
-                balance=utils.bvv(balance))
+    e = env.Env(
+        code,
+        address=utils.bvv(int(args.contract_addr, 16)),
+        caller=utils.DEFAULT_CALLER,
+        origin=utils.DEFAULT_CALLER,
+        balance=utils.bvv(balance),
+    )
 
 print("Starting symbolic execution step...")
 
 s = sm.SymbolicMachine(e)
 s.execute(timeout_sec=args.exec_timeout)
 
-print("Symbolic execution finished with coverage %i%%."
-      % int(s.get_coverage() * 100))
-print("Outcomes: %i interesting. %i total and %i partial outcomes."
-      % (sum(int(o.is_interesting()) for o in s.outcomes),
-         len(s.outcomes),
-         len(s.partial_outcomes)))
+print("Symbolic execution finished with coverage %i%%." % int(s.get_coverage() * 100))
+print(
+    "Outcomes: %i interesting. %i total and %i partial outcomes."
+    % (
+        sum(int(o.is_interesting()) for o in s.outcomes),
+        len(s.outcomes),
+        len(s.partial_outcomes),
+    )
+)
 
 
 if args.summarize:
@@ -182,22 +218,22 @@ print()
 print("Starting analysis step...")
 
 ra = recursive_analyzer.RecursiveAnalyzer(
-        max_wei_to_send=args.max_to_send,
-        min_wei_to_receive=args.min_to_receive,
-        block=args.block)
+    max_wei_to_send=args.max_to_send,
+    min_wei_to_receive=args.min_to_receive,
+    block=args.block,
+)
 bug = ra.check_states(
-        s.outcomes,
-        timeout=args.analysis_timeout,
-        max_depth=args.max_transaction_depth)
+    s.outcomes, timeout=args.analysis_timeout, max_depth=args.max_transaction_depth
+)
 
 if bug:
     print("=================== Bug found! ===================")
     if logging.getLogger().isEnabledFor(logging.DEBUG):
-        print('Composite state:')
+        print("Composite state:")
         pprint.pprint(bug[0].as_dict())
         print()
         print()
-    print('Path:')
+    print("Path:")
     for state in bug[1]:
         print()
         pprint.pprint(state.as_dict())
