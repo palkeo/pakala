@@ -4,6 +4,8 @@ Pakala
 [![PyPI](https://badge.fury.io/py/pakala.svg)](https://pypi.python.org/pypi/pakala)
 [![Build States](https://circleci.com/gh/palkeo/pakala.svg?style=svg)](https://circleci.com/gh/palkeo/pakala)
 
+<img align="right" src="https://www.palkeo.com/_images/pakala-mani-sona.svg.png">
+
 "ilo Pakala li pakala e mani sona"
 
 * Pakala is a tool to search for exploitable bugs in Ethereum smart contracts.
