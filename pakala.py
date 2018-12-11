@@ -130,6 +130,13 @@ analyzer.add_argument(
 
 args = parser.parse_args()
 
+if args.v.isnumeric():
+    logging.basicConfig(level=int(args.v))
+elif hasattr(logging, args.v.upper()):
+    logging.basicConfig(level=getattr(logging, args.v.upper()))
+else:
+    err_exit("Logging should be DEBUG/INFO/WARNING/ERROR.")
+
 try:
     logging.debug("Node working. Block %i ", w3.eth.blockNumber)
 except web3.exceptions.UnhandledRequest:
@@ -139,13 +146,6 @@ except web3.exceptions.UnhandledRequest:
         "WEB3_PROVIDER_URI as follows:\n"
         "$ export WEB3_PROVIDER_URI='https://mainnet.infura.io'"
     )
-
-if args.v.isnumeric():
-    logging.basicConfig(level=int(args.v))
-elif hasattr(logging, args.v.upper()):
-    logging.basicConfig(level=getattr(logging, args.v.upper()))
-else:
-    err_exit("Logging should be DEBUG/INFO/WARNING/ERROR.")
 
 if args.contract_addr == "-":
     # Let's read the runtime bytecode from stdin
