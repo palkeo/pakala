@@ -41,6 +41,7 @@ def is_function(state, function):
 
 
 def with_new_env(state):
+    """Return a new state that's identical but rooted in a new, independent environment."""
     assert state.solver.satisfiable()
     old_env = state.env
     new_env = old_env.clean_copy()
@@ -112,6 +113,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                     break
 
     def _append_state(self, composite_state, state):
+        # TODO: Simplify/split that function. A bit too complex.
         # May fail because pprint compare claripy symbols. So only if needed.
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
