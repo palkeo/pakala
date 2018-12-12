@@ -1,4 +1,4 @@
-py-eth
+py-evm
 claripy
 mock
 web3
