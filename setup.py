@@ -12,7 +12,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='pakala',
-    version='1.0.3',
+    version='1.0.4',
 
     description='An EVM symbolic execution tool and vulnerability scanner',
 
