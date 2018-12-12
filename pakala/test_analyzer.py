@@ -104,7 +104,8 @@ class TestCheckState(unittest.TestCase):
 
     # TODO: Fix it!
     @unittest.skip(
-        "Known issue: we are sending back env.balance, that doesn't contain env.value, and it should!"
+        "Known issue: we are sending back env.balance, "
+        "that doesn't contain env.value, and it should!"
     )
     def test_send_all_and_selfdestruct(self):
         self.state.calls.append(self.get_call(self.env.balance, to=self.env.caller + 1))

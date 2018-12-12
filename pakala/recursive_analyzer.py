@@ -40,7 +40,7 @@ def is_function(state, function):
 
 
 def with_new_env(state):
-    """Return a new state that's identical but rooted in a new, independent environment."""
+    """Return a new identical state, rooted in a new, independent environment."""
     assert state.solver.satisfiable()
     old_env = state.env
     new_env = old_env.clean_copy()

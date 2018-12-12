@@ -188,7 +188,8 @@ class Sha3Mixin(object):
             for k, v in self.hashes.items():
                 # Make sure the symbols are distinct
                 assert all(v is not v2 for v2 in other.hashes.values())
-                # TODO: Support identical inputs. We just have to make the symbols identical.
+                # TODO: Support identical inputs.
+                # We just have to make the symbols identical.
                 assert all(k is not k2 for k2 in other.hashes.keys())
             combined.hashes.update(other.hashes)
 

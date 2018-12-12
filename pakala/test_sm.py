@@ -10,6 +10,9 @@ from pakala.env import Env
 from pakala import sm
 from pakala import utils
 
+# pylint: disable=undefined-variable
+# flake8: noqa
+
 from eth.vm.opcode_values import *
 
 
@@ -18,7 +21,8 @@ class TestSymbolicMachine(unittest.TestCase):
 
     def setUp(self):
         code = codecs.decode(
-            "6003600302600f56601b60006000a15b6101a560006000a160019003801515600f57600660006000a1",
+            "6003600302600f56601b60006000a15b6101a5600060"
+            "00a160019003801515600f57600660006000a1",
             "hex",
         )
         env = Env(code)

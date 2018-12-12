@@ -69,21 +69,30 @@ parser.add_argument(
 limits = parser.add_argument_group("time/depth limits")
 limits.add_argument(
     "--exec-timeout",
-    help="Timeout in seconds for the symbolic execution stage. Use 0 for a system that will stop when the last coverage increase was too long ago.",
+    help=(
+        "Timeout in seconds for the symbolic execution stage. Use 0 for a "
+        "system that will stop when the last coverage increase was too long ago."
+    ),
     type=int,
     default=0,
     metavar="SECONDS",
 )
 limits.add_argument(
     "--analysis-timeout",
-    help="Timeout in seconds for the analysis stage (that will stack the executions and find bugs). Use 0 to disable timeout and use only depth limit.",
+    help=(
+        "Timeout in seconds for the analysis stage (that will stack the executions "
+        "and find bugs). Use 0 to disable timeout and use only depth limit."
+    ),
     type=int,
     default=0,
     metavar="SECONDS",
 )
 limits.add_argument(
     "--max-transaction-depth",
-    help="Maximum number of outcomes that can be fused together during the analysis step.",
+    help=(
+        "Maximum number of outcomes that can be fused "
+        "together during the analysis step."
+    ),
     type=int,
     default=4,
 )
@@ -121,7 +130,10 @@ analyzer.add_argument(
     "--max-to-send",
     type=ethWeiAmount,
     default="10 ether",
-    help="Maximum amount allowed to send to the contract (even if we would receive more).",
+    help=(
+        "Maximum amount allowed to send to the contract "
+        "(even if we would receive more)."
+    ),
     metavar="BALANCE",
 )
 

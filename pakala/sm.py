@@ -51,11 +51,11 @@ def not_bool(variable):
     return variable
 
 
-def make_consistent(a, b):
+def make_consistent(a, b):  # pylint:disable=invalid-name
     """Ensure a and b are not bool and not bool."""
     if isinstance(a, claripy.ast.Bool) and not isinstance(b, claripy.ast.Bool):
         return not_bool(a), b
-    elif isinstance(b, claripy.ast.Bool) and not isinstance(a, claripy.ast.Bool):
+    if isinstance(b, claripy.ast.Bool) and not isinstance(a, claripy.ast.Bool):
         return a, not_bool(b)
     return a, b
 
@@ -137,7 +137,7 @@ class SymbolicMachine:
 
         to_try = set()
         nb_random = 0
-        for t in tries:
+        for t in tries:  # pylint:disable=invalid-name
             if isinstance(t, numbers.Number) and state.solver.solution(variable, t):
                 to_try.add(t)
             elif t is min:
@@ -155,9 +155,7 @@ class SymbolicMachine:
             new_state.solver.add(variable == value)
             self.add_branch(new_state)
 
-    def exec_branch(
-        self, state
-    ):  # pylint: disable=too-many-locals,too-many-return-statements,too-many-branches,too-many-statements
+    def exec_branch(self, state):  # pylint:disable=invalid-name
         """Execute forward from a state, queuing new states if needed."""
         logger.debug("Constraints: %s", state.solver.constraints)
 
@@ -420,7 +418,7 @@ class SymbolicMachine:
                     raise utils.CodeError("Invalid jump (%i)" % addr)
                 state.pc = addr
                 self.add_branch(state)
-                return
+                return False
             elif op == opcode_values.JUMPI:
                 addr, condition = solution(state.stack_pop()), state.stack_pop()
                 state_false = state.copy()
@@ -439,7 +437,7 @@ class SymbolicMachine:
                 ):
                     raise utils.CodeError("Invalid jump (%i)" % (state.pc - 1))
                 self.add_branch(state)
-                return
+                return False
             elif opcode_values.PUSH1 <= op <= opcode_values.PUSH32:
                 pushnum = op - opcode_values.PUSH1 + 1
                 raw_value = self.code.read(pushnum)
@@ -455,13 +453,8 @@ class SymbolicMachine:
                 state.stack[-1] = temp
             elif opcode_values.LOG0 <= op <= opcode_values.LOG4:
                 depth = op - opcode_values.LOG0
-                mstart, msz = (
-                    state.stack_pop(),
-                    state.stack_pop(),
-                )  # pylint:disable=unused-variable
-                topics = [
-                    state.stack_pop() for x in range(depth)
-                ]  # pylint:disable=unused-variable
+                mstart, msz = (state.stack_pop(), state.stack_pop())
+                topics = [state.stack_pop() for x in range(depth)]
             elif op == opcode_values.SHA3:
                 start, length = solution(state.stack_pop()), solution(state.stack_pop())
                 memory = state.memory.read(start, length)
@@ -478,7 +471,7 @@ class SymbolicMachine:
                 except ValueError:  # Multiple solutions, let's fuzz.
                     state.stack_push(indexes)  # restore the stack
                     self.add_for_fuzzing(state, indexes, CALLDATASIZE_FUZZ)
-                    return
+                    return False
                 state.solver.add(state.env.calldata_size >= index + 32)
                 state.stack_push(state.env.calldata.read(index, 32))
             elif op == opcode_values.CALLDATASIZE:
@@ -495,7 +488,7 @@ class SymbolicMachine:
                     size = solution(size)
                 except ValueError:
                     self.add_for_fuzzing(old_state, size, CALLDATASIZE_FUZZ)
-                    return
+                    return False
                 state.memory.copy_from(state.env.calldata, mstart, dstart, size)
                 state.solver.add(state.env.calldata_size >= dstart + size)
             elif op == opcode_values.CODESIZE:
@@ -533,7 +526,8 @@ class SymbolicMachine:
             elif op == opcode_values.MSIZE:
                 state.stack_push(bvv(state.memory.size()))
             elif op == opcode_values.SLOAD:
-                # TODO: This is inaccurate, because the storage can change in a single transaction.
+                # TODO: This is inaccurate, because the storage can change
+                # in a single transaction.
                 # See commit d98cab834f8f359f01ef805256d179f5529ebe30.
                 key = state.stack_pop()
                 if key in state.storage_written:
@@ -543,7 +537,8 @@ class SymbolicMachine:
                         state.storage_read[key] = claripy.BVS("storage[%s]" % key, 256)
                     state.stack_push(state.storage_read[key])
             elif op == opcode_values.SSTORE:
-                # TODO: This is inaccurate, because the storage can change in a single transaction.
+                # TODO: This is inaccurate, because the storage can change
+                # in a single transaction.
                 # See commit d98cab834f8f359f01ef805256d179f5529ebe30.
                 key = state.stack_pop()
                 value = state.stack_pop()
@@ -552,7 +547,8 @@ class SymbolicMachine:
             elif op == opcode_values.CALL:
                 state.pc += 1
 
-                # First possibility: the call fails (always possible with a call stack big enough)
+                # First possibility: the call fails
+                # (always possible with a call stack big enough)
                 state_fail = state.copy()
                 state_fail.stack_push(claripy.BoolV(False))
                 self.add_branch(state_fail)
@@ -560,7 +556,8 @@ class SymbolicMachine:
                 # Second possibility: success.
                 state.calls.append(state.stack[-7:])
 
-                gas, to_, value, meminstart, meminsz, memoutstart, memoutsz = (  # pylint:disable=unused-variable
+                # pylint:disable=unused-variable
+                gas, to_, value, meminstart, meminsz, memoutstart, memoutsz = (
                     state.stack_pop() for _ in range(7)
                 )
 
@@ -571,14 +568,14 @@ class SymbolicMachine:
 
                 state.stack_push(claripy.BoolV(True))
                 self.add_branch(state)
-                return
+                return False
 
             elif op == opcode_values.SELFDESTRUCT:
                 state.selfdestruct_to = state.stack[-1]
                 return True
 
             elif op == opcode_values.REVERT:
-                return
+                return False
             else:
                 raise utils.InterpreterError(state, "Unknown opcode %s" % op)
 
@@ -587,7 +584,8 @@ class SymbolicMachine:
     def execute(self, timeout_sec):
         """Run the code, searching for all the interesting outcomes.
 
-        Returns the process time it took to execute."""
+        Returns the process time it took to execute.
+        """
 
         if self.outcomes:
             raise RuntimeError("Already executed.")
@@ -679,7 +677,7 @@ class SymbolicMachine:
         number of instructions."""
         total_lines = 0
         covered_lines = 0
-        for pc, instruction in enumerate(self.code):
+        for pc, instruction in enumerate(self.code):  # pylint:disable=invalid-name
             if pc == len(self.code):
                 break
             if instruction == opcode_values.JUMPDEST or not self.code.is_valid_opcode(
