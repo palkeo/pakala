@@ -43,8 +43,8 @@ class TestCheckState(unittest.TestCase):
     def test_nothing(self):
         self.assertFalse(self.check_state(self.state))
 
-    def test_suicide(self):
-        self.state.suicide_to = self.env.caller
+    def test_selfdestruct(self):
+        self.state.selfdestruct_to = self.env.caller
         self.assertTrue(self.check_state(self.state))
 
     def test_send_back(self):
@@ -106,16 +106,16 @@ class TestCheckState(unittest.TestCase):
     @unittest.skip(
         "Known issue: we are sending back env.balance, that doesn't contain env.value, and it should!"
     )
-    def test_send_all_and_suicide(self):
+    def test_send_all_and_selfdestruct(self):
         self.state.calls.append(self.get_call(self.env.balance, to=self.env.caller + 1))
-        self.state.suicide_to = self.env.caller
+        self.state.selfdestruct_to = self.env.caller
         self.assertFalse(self.check_state(self.state))
 
     def test_read_concrete(self):
         self.analyzer.storage_cache = FakeStorage({0: 0xBAD1DEA})
 
         self.state.storage_read[utils.bvv(0)] = claripy.BVS("storage[0]", 256)
-        self.state.suicide_to = self.state.storage_read[utils.bvv(0)]
+        self.state.selfdestruct_to = self.state.storage_read[utils.bvv(0)]
         self.assertFalse(self.check_state(self.state))
 
         self.state.calls.append(

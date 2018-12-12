@@ -95,7 +95,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             return path
 
         # If we kill the contract, we can't make any more call!
-        if path[-1].suicide_to is not None:
+        if path[-1].selfdestruct_to is not None:
             return
 
         # We have to downsize the used solver to free memory in z3, otherwise
@@ -122,7 +122,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 pprint.pformat(composite_state.as_dict()),
             )
 
-        assert composite_state.suicide_to is None
+        assert composite_state.selfdestruct_to is None
 
         composite_state.solver = composite_state.solver.combine([state.solver])
 
@@ -133,8 +133,8 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
         for call in state.calls:
             composite_state.calls.append(call)
 
-        if state.suicide_to is not None:
-            composite_state.suicide_to = state.suicide_to
+        if state.selfdestruct_to is not None:
+            composite_state.selfdestruct_to = state.selfdestruct_to
 
         # Resolve read/write
 

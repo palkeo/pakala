@@ -31,16 +31,16 @@ class State(object):
         self.storage_read = {}
 
         self.calls = []
-        self.suicide_to = None
+        self.selfdestruct_to = None
 
         self.solver = utils.get_solver()
 
     def __repr__(self):
         return (
-            "State(suicide_to=%s, calls=%s, storage_written=%s, "
+            "State(selfdestruct_to=%s, calls=%s, storage_written=%s, "
             "storage_read=%s, env=%s, solver=%s)"
         ) % (
-            self.suicide_to,
+            self.selfdestruct_to,
             self.calls,
             self.storage_written,
             self.storage_read,
@@ -50,7 +50,7 @@ class State(object):
 
     def as_dict(self):
         return {
-            "suicide_to": self.suicide_to,
+            "selfdestruct_to": self.selfdestruct_to,
             "calls": self.calls,
             "storage_written": self.storage_written,
             "storage_read": self.storage_read,
@@ -60,7 +60,7 @@ class State(object):
 
     def clean(self):
         """Clean the state, when it won't be executed anymore and we are only
-        interested by the calls, suicides..."""
+        interested by the calls, selfdestructs..."""
         self.stack = []
         self.memory = memory.Memory()
         self.solver.downsize()
@@ -70,7 +70,7 @@ class State(object):
         state:
             - in storage, read and written
             - calls
-            - in suicide data
+            - in selfdestruct data
             - in solver constraints
         r() can replace symbols in the AST by other symbols. Generally, r() is
         derived from Env.replace(), to substitute an environment with another.
@@ -79,7 +79,7 @@ class State(object):
         self.storage_written = {r(k): r(v) for k, v in self.storage_written.items()}
         self.storage_read = {r(k): r(v) for k, v in self.storage_read.items()}
         self.calls = [[r(i) for i in call] for call in self.calls]
-        self.suicide_to = None if self.suicide_to is None else r(self.suicide_to)
+        self.selfdestruct_to = None if self.selfdestruct_to is None else r(self.selfdestruct_to)
 
         # TODO: Do something cleaner! This work only with our custom solver mixin.
         self.solver.replace(r)
@@ -89,7 +89,7 @@ class State(object):
         #    self.solver.add(c)
 
     def __hash__(self):
-        l = [hash(self.env), hash(self.pc), hash(self.memory), hash(self.suicide_to)]
+        l = [hash(self.env), hash(self.pc), hash(self.memory), hash(self.selfdestruct_to)]
         for i in self.stack:
             l.append(hash(i))
         for call in self.calls:
@@ -119,7 +119,7 @@ class State(object):
         return self.stack.pop()
 
     def is_interesting(self):
-        return bool(self.storage_written or self.calls or self.suicide_to is not None)
+        return bool(self.storage_written or self.calls or self.selfdestruct_to is not None)
 
     def copy(self):
         """Make a shallow copy of the current environment. Needs to be fast."""
@@ -131,7 +131,7 @@ class State(object):
         new_state.storage_read = self.storage_read.copy()
         new_state.solver = self.solver.branch()
         new_state.calls = self.calls[:]
-        new_state.suicide_to = self.suicide_to
+        new_state.selfdestruct_to = self.selfdestruct_to
         new_state.score = self.score
         return new_state
 

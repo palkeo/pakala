@@ -548,7 +548,7 @@ class TestInstructions(unittest.TestCase):
         )
         self.assertTrue(self.state.stack[0] is self.state.stack[1])
 
-    # TODO: test_call, test_callcode, test_suicide
+    # TODO: test_call, test_callcode, test_selfdestruct
 
     def test_invalid_opcode(self):
         with self.assertRaises(utils.CodeError):

@@ -576,7 +576,7 @@ class SymbolicMachine:
                 return
 
             elif op == opcode_values.SELFDESTRUCT:
-                state.suicide_to = state.stack[-1]
+                state.selfdestruct_to = state.stack[-1]
                 return True
 
             elif op == opcode_values.REVERT:
