@@ -1,6 +1,5 @@
 import logging
 import itertools
-import collections
 import random
 
 from claripy import frontend_mixins

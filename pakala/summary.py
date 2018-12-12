@@ -9,8 +9,6 @@ import collections
 import json
 import lzma
 
-from pakala import sm
-
 
 # TODO: Don't hardcode it...
 SIGNATURE_FILE = "../signatures.json.xz"

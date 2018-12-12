@@ -17,16 +17,13 @@
 """
 import argparse
 import codecs
-import datetime
 import logging
 import sys
-import time
 import re
 import pprint
 
 from pakala import sm
 from pakala import recursive_analyzer
-from pakala import analyzer
 from pakala import env
 from pakala import utils
 from pakala import summary

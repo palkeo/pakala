@@ -1,4 +1,3 @@
-import claripy
 import unittest
 
 from pakala import env

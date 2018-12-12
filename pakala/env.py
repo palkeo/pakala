@@ -1,13 +1,9 @@
-import collections
-import numbers
 import time
 
 import claripy
-
 from eth.vm import code_stream
 
 from pakala import memory
-from pakala import utils
 
 
 ENV_VARS = (

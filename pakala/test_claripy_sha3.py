@@ -117,7 +117,7 @@ class TestSha3Support(unittest.TestCase):
         self.assertFalse(s.satisfiable())
 
         s_copy = s.branch()
-        self.assertFalse(s.satisfiable())
+        self.assertFalse(s_copy.satisfiable())
 
     def test_solver_copy(self):
         s = get_solver()
