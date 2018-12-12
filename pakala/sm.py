@@ -417,10 +417,7 @@ class SymbolicMachine:
                 state.stack_pop()
             elif op == opcode_values.JUMP:
                 addr = solution(state.stack_pop())
-                if (
-                    addr >= len(self.code)
-                    or self.code[addr] != opcode_values.JUMPDEST
-                ):
+                if addr >= len(self.code) or self.code[addr] != opcode_values.JUMPDEST:
                     raise utils.CodeError("Invalid jump (%i)" % addr)
                 state.pc = addr
                 self.add_branch(state)
@@ -437,7 +434,10 @@ class SymbolicMachine:
                 state_false.pc += 1
                 self.add_branch(state_false)
                 state.pc = addr
-                if state.pc >= len(self.code) or self.code[state.pc] != opcode_values.JUMPDEST:
+                if (
+                    state.pc >= len(self.code)
+                    or self.code[state.pc] != opcode_values.JUMPDEST
+                ):
                     raise utils.CodeError("Invalid jump (%i)" % (state.pc - 1))
                 self.add_branch(state)
                 return
@@ -445,8 +445,7 @@ class SymbolicMachine:
                 pushnum = op - opcode_values.PUSH1 + 1
                 raw_value = self.code.read(pushnum)
                 state.pc += pushnum
-                state.stack_push(bvv(
-                    int.from_bytes(raw_value, byteorder='big')))
+                state.stack_push(bvv(int.from_bytes(raw_value, byteorder="big")))
             elif opcode_values.DUP1 <= op <= opcode_values.DUP16:
                 depth = op - opcode_values.DUP1 + 1
                 state.stack_push(state.stack[-depth])
@@ -684,7 +683,9 @@ class SymbolicMachine:
         for pc, instruction in enumerate(self.code):
             if pc == len(self.code):
                 break
-            if instruction == opcode_values.JUMPDEST or not self.code.is_valid_opcode(pc):
+            if instruction == opcode_values.JUMPDEST or not self.code.is_valid_opcode(
+                pc
+            ):
                 continue
             total_lines += 1
             covered_lines += bool(self.coverage[pc])

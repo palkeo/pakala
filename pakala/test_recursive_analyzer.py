@@ -126,7 +126,9 @@ class TestCheckStates(unittest.TestCase):
         state_selfdestruct.selfdestruct_to = self.env.calldata.read(36, 32)
         storage_input = claripy.BVS("storage[0]", 256)
         state_selfdestruct.storage_read = {utils.bvv(0): storage_input}
-        state_selfdestruct.solver.add(storage_input == Sha3(self.env.calldata.read(4, 32)))
+        state_selfdestruct.solver.add(
+            storage_input == Sha3(self.env.calldata.read(4, 32))
+        )
 
         storage = {0: 0}
         self.assertTrue(

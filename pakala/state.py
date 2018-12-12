@@ -79,7 +79,9 @@ class State(object):
         self.storage_written = {r(k): r(v) for k, v in self.storage_written.items()}
         self.storage_read = {r(k): r(v) for k, v in self.storage_read.items()}
         self.calls = [[r(i) for i in call] for call in self.calls]
-        self.selfdestruct_to = None if self.selfdestruct_to is None else r(self.selfdestruct_to)
+        self.selfdestruct_to = (
+            None if self.selfdestruct_to is None else r(self.selfdestruct_to)
+        )
 
         # TODO: Do something cleaner! This work only with our custom solver mixin.
         self.solver.replace(r)
@@ -89,7 +91,12 @@ class State(object):
         #    self.solver.add(c)
 
     def __hash__(self):
-        l = [hash(self.env), hash(self.pc), hash(self.memory), hash(self.selfdestruct_to)]
+        l = [
+            hash(self.env),
+            hash(self.pc),
+            hash(self.memory),
+            hash(self.selfdestruct_to),
+        ]
         for i in self.stack:
             l.append(hash(i))
         for call in self.calls:
@@ -119,7 +126,9 @@ class State(object):
         return self.stack.pop()
 
     def is_interesting(self):
-        return bool(self.storage_written or self.calls or self.selfdestruct_to is not None)
+        return bool(
+            self.storage_written or self.calls or self.selfdestruct_to is not None
+        )
 
     def copy(self):
         """Make a shallow copy of the current environment. Needs to be fast."""

@@ -17,7 +17,10 @@ class TestSymbolicMachine(unittest.TestCase):
     """Basic tests for the members of the symbolic machine."""
 
     def setUp(self):
-        code = codecs.decode("6003600302600f56601b60006000a15b6101a560006000a160019003801515600f57600660006000a1", "hex")
+        code = codecs.decode(
+            "6003600302600f56601b60006000a15b6101a560006000a160019003801515600f57600660006000a1",
+            "hex",
+        )
         env = Env(code)
 
         self.sm = sm.SymbolicMachine(env)
@@ -90,7 +93,7 @@ class TestInstructions(unittest.TestCase):
     def test_add(self):
         self.run_code([PUSH1, 1, PUSH1, 2, ADD])
         self.assert_stack([3])
-        self.run_code([PUSH1, 1, PUSH32] + [255]*32 + [ADD])
+        self.run_code([PUSH1, 1, PUSH32] + [255] * 32 + [ADD])
         self.assert_stack([0])
 
     def test_sub(self):
@@ -108,13 +111,13 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([2])
         self.run_code([PUSH1, 10, PUSH1, 8, DIV])
         self.assert_stack([0])
-        self.run_code([PUSH32] + [255]*32 + [PUSH1, 1, DIV])
+        self.run_code([PUSH32] + [255] * 32 + [PUSH1, 1, DIV])
         self.assert_stack([0])
         self.run_code([PUSH1, 0, PUSH1, 1, DIV])
         self.assert_stack([0])
 
     def test_sdiv(self):
-        self.run_code([PUSH32] + [255]*32 + [PUSH1, 1, SDIV])
+        self.run_code([PUSH32] + [255] * 32 + [PUSH1, 1, SDIV])
         self.assert_stack([2 ** 256 - 1])
         self.run_code([PUSH1, 0, PUSH1, 1, SMOD])
         self.assert_stack([0])
@@ -122,15 +125,15 @@ class TestInstructions(unittest.TestCase):
     def test_mod(self):
         self.run_code([PUSH1, 3, PUSH1, 7, MOD])
         self.assert_stack([1])
-        self.run_code([PUSH1, 3, PUSH32] + [255]*32 + [MOD])
+        self.run_code([PUSH1, 3, PUSH32] + [255] * 32 + [MOD])
         self.assert_stack([0])
         self.run_code([PUSH1, 0, PUSH1, 1, MOD])
         self.assert_stack([0])
 
     def test_smod(self):
-        self.run_code([PUSH1, 3, PUSH32] + [255]*32 + [SMOD])
+        self.run_code([PUSH1, 3, PUSH32] + [255] * 32 + [SMOD])
         self.assert_stack([2 ** 256 - 1])
-        self.run_code([PUSH1, 3, PUSH32] + [255]*31 + [252, SMOD])
+        self.run_code([PUSH1, 3, PUSH32] + [255] * 31 + [252, SMOD])
         self.assert_stack([2 ** 256 - 1])
         self.run_code([PUSH1, 3, PUSH1, 4, SMOD])
         self.assert_stack([1])
@@ -178,9 +181,9 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([True])
         self.run_code([PUSH1, 7, PUSH1, 7, LT])
         self.assert_stack([False])
-        self.run_code([PUSH32] + [0xFF]*31 + [250, PUSH32] + [0xFF]*31 + [251, LT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, LT])
         self.assert_stack([False])
-        self.run_code([PUSH32] + [0xFF]*31 + [250, PUSH32] + [0x00]*31 + [251, LT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, LT])
         self.assert_stack([True])
 
     def test_gt(self):
@@ -188,9 +191,9 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([False])
         self.run_code([PUSH1, 7, PUSH1, 7, GT])
         self.assert_stack([False])
-        self.run_code([PUSH32] + [0xFF]*31 + [250, PUSH32] + [0xFF]*31 + [251, GT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, GT])
         self.assert_stack([True])
-        self.run_code([PUSH32] + [0xFF]*31 + [250, PUSH32] + [0x00]*31 + [251, GT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, GT])
         self.assert_stack([False])
 
     def test_slt(self):
@@ -198,9 +201,9 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([True])
         self.run_code([PUSH1, 7, PUSH1, 7, SLT])
         self.assert_stack([False])
-        self.run_code([PUSH32] + [0xFF]*31 + [250, PUSH32] + [0xFF]*31 + [251, SLT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, SLT])
         self.assert_stack([False])
-        self.run_code([PUSH32] + [0xFF]*31 + [250, PUSH32] + [0x00]*31 + [251, SLT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, SLT])
         self.assert_stack([False])
 
     def test_sgt(self):
@@ -208,9 +211,9 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([False])
         self.run_code([PUSH1, 7, PUSH1, 7, SGT])
         self.assert_stack([False])
-        self.run_code([PUSH32] + [0xFF]*31 + [250, PUSH32] + [0xFF]*31 + [251, SGT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, SGT])
         self.assert_stack([True])
-        self.run_code([PUSH32] + [0xFF]*31 + [250, PUSH32] + [0x00]*31 + [251, SGT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, SGT])
         self.assert_stack([True])
 
     def test_eq(self):
@@ -222,7 +225,7 @@ class TestInstructions(unittest.TestCase):
     def test_iszero(self):
         self.run_code([PUSH1, 1, ISZERO])
         self.assert_stack([False])
-        self.run_code([PUSH1, 1, PUSH32] + 32*[0xFF] + [ADD, ISZERO])
+        self.run_code([PUSH1, 1, PUSH32] + 32 * [0xFF] + [ADD, ISZERO])
         self.assert_stack([True])
 
     def test_and(self):
@@ -249,7 +252,7 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([(2 ** 256 - 1) ^ 0x43])
         self.run_code([PUSH1, 0, NOT])
         self.assert_stack([2 ** 256 - 1])
-        self.run_code([PUSH32] + 32*[0xFF] + [NOT])
+        self.run_code([PUSH32] + 32 * [0xFF] + [NOT])
         self.assert_stack([0])
 
         a = random.randint(0, 255)
@@ -341,9 +344,7 @@ class TestInstructions(unittest.TestCase):
             self.run_code([PUSH1, 4, JUMP, POP, PC])
 
     def test_jumpi(self):
-        r = self.run_code(
-            [PUSH1, 42, CALLVALUE, EQ, PUSH1, 8, JUMPI, PC, JUMPDEST]
-        )
+        r = self.run_code([PUSH1, 42, CALLVALUE, EQ, PUSH1, 8, JUMPI, PC, JUMPDEST])
         self.assertFalse(r)
 
         def true_state(state):
@@ -462,7 +463,7 @@ class TestInstructions(unittest.TestCase):
     def test_codecopy(self):
         code = [CODESIZE, PUSH1, 0, DUP1, CODECOPY, PUSH1, 0, MLOAD]
         self.run_code(code)
-        self.assert_stack([bytes(code).ljust(32, b'\0')])
+        self.assert_stack([bytes(code).ljust(32, b"\0")])
 
     def test_mload(self):
         self.run_code([PUSH1, 0, MLOAD, PUSH1, 0, MLOAD])
@@ -476,12 +477,14 @@ class TestInstructions(unittest.TestCase):
         self.run_code(
             [
                 PUSH2,
-                0xCA, 0xFE,
+                0xCA,
+                0xFE,
                 PUSH1,
                 64,
                 MSTORE,
                 PUSH2,
-                0xDE, 0xAD,
+                0xDE,
+                0xAD,
                 PUSH1,
                 62,
                 MSTORE,
@@ -531,20 +534,7 @@ class TestInstructions(unittest.TestCase):
         )
         self.assert_stack([42, 43])
         self.run_code(
-            [
-                PUSH1,
-                0,
-                SLOAD,
-                PUSH1,
-                32,
-                SSTORE,
-                PUSH1,
-                32,
-                SLOAD,
-                PUSH1,
-                0,
-                SLOAD,
-            ]
+            [PUSH1, 0, SLOAD, PUSH1, 32, SSTORE, PUSH1, 32, SLOAD, PUSH1, 0, SLOAD]
         )
         self.assertTrue(self.state.stack[0] is self.state.stack[1])
 
@@ -552,7 +542,7 @@ class TestInstructions(unittest.TestCase):
 
     def test_invalid_opcode(self):
         with self.assertRaises(utils.CodeError):
-            self.run_code([0x01, 0x02, 0x03, 0xfe, 0xff])
+            self.run_code([0x01, 0x02, 0x03, 0xFE, 0xFF])
 
 
 if __name__ == "__main__":
