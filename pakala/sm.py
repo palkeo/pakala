@@ -193,6 +193,8 @@ class SymbolicMachine:
             # Trivial operations first
             if not self.code.is_valid_opcode(state.pc):
                 raise utils.CodeError("Trying to execute PUSH data")
+            elif op == 254:  # INVALID opcode
+                raise utils.CodeError("designed INVALID opcode")
             elif op == opcode_values.JUMPDEST:
                 pass
             elif op == opcode_values.ADD:
