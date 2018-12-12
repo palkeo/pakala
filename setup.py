@@ -45,7 +45,7 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['ethereum', 'claripy', 'web3'],
+    install_requires=['py-evm', 'claripy', 'web3'],
 
     extras_require={
         'test': ['mock'],

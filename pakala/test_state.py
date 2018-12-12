@@ -36,7 +36,7 @@ class TestState(unittest.TestCase):
         b = State()
         self.assertEqual(hash(a), hash(b))
 
-        e = env.Env("code")
+        e = env.Env(b"")
 
         a.solver.add(e.value == 1)
         a.solver.add(e.block_timestamp == 2)

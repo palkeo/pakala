@@ -24,10 +24,9 @@ import math
 import numbers
 import time
 
-from ethereum import opcodes
-from ethereum import vm
-from ethereum import utils as ethutils
 import claripy
+
+from eth.vm import opcode_values
 
 from pakala import utils
 from pakala.state import State
@@ -67,7 +66,7 @@ class SymbolicMachine:
     """
 
     def __init__(self, env):
-        self.code = utils.disassemble(env.code)
+        self.code = env.code
         logger.debug("Initializing symbolic machine with source code: %s", self.code)
         # For use by heapq only. Contains couples (score, state).
         self.branch_queue = []
@@ -174,49 +173,50 @@ class SymbolicMachine:
             return solution if isinstance(solution, numbers.Number) else solution.value
 
         state.score += 1
+        self.code.pc = state.pc
 
         while True:
             if state.pc >= len(self.code):
                 return True
 
-            # TODO: Don't log for things like PUSH, POP...
+            op = self.code.next()
+            self.coverage[state.pc] += 1
+
             logger.debug("NEW STEP")
             logger.debug("Memory: %s", state.memory)
             logger.debug("Stack: %s", state.stack)
-            logger.debug("PC: %i %s", state.pc, self.code[state.pc])
+            logger.debug("PC: %i, %s", state.pc, op)
 
-            op = self.code[state.pc]  # pylint:disable=invalid-name
-            self.coverage[state.pc] += 1
-
+            assert self.code.pc == state.pc + 1
+            assert isinstance(op, numbers.Number)
             assert all(
                 hasattr(i, "symbolic") for i in state.stack
             ), "The stack musty only contains claripy BV's"
 
             # Trivial operations first
-
-            if isinstance(op, numbers.Number):
-                raise utils.CodeError("Trying to execute PUSH data.")
-            elif op == "JUMPDEST":
+            if not self.code.is_valid_opcode(state.pc):
+                raise utils.CodeError("Trying to execute PUSH data")
+            elif op == opcode_values.JUMPDEST:
                 pass
-            elif op == "ADD":
+            elif op == opcode_values.ADD:
                 s0, s1 = (
                     not_bool(state.stack_pop()),
                     not_bool(state.stack_pop()),
                 )  # pylint:disable=invalid-name
                 state.stack_push(s0 + s1)
-            elif op == "SUB":
+            elif op == opcode_values.SUB:
                 s0, s1 = (
                     not_bool(state.stack_pop()),
                     not_bool(state.stack_pop()),
                 )  # pylint:disable=invalid-name
                 state.stack_push(s0 - s1)
-            elif op == "MUL":
+            elif op == opcode_values.MUL:
                 s0, s1 = (
                     not_bool(state.stack_pop()),
                     not_bool(state.stack_pop()),
                 )  # pylint:disable=invalid-name
                 state.stack_push(s0 * s1)
-            elif op == "DIV":
+            elif op == opcode_values.DIV:
                 # We need to use claripy.LShR instead of a division if possible,
                 # because the solver is bad dealing with divisions, better
                 # with shifts. And we need shifts to handle the solidity ABI
@@ -239,7 +239,7 @@ class SymbolicMachine:
                         state.stack_push(s0.LShR(exp))
                     else:
                         state.stack_push(s0 / s1)
-            elif op == "SDIV":
+            elif op == opcode_values.SDIV:
                 s0, s1 = (
                     state.stack_pop(),
                     state.stack_pop(),
@@ -250,7 +250,7 @@ class SymbolicMachine:
                     state.stack_push(claripy.If(s1 == 0, BVV_0, s0.SDiv(s1)))
                 else:
                     state.stack_push(BVV_0 if s1 == 0 else s0.SDiv(s1))
-            elif op == "MOD":
+            elif op == opcode_values.MOD:
                 s0, s1 = (
                     state.stack_pop(),
                     state.stack_pop(),
@@ -261,7 +261,7 @@ class SymbolicMachine:
                     state.stack_push(claripy.If(s1 == 0, BVV_0, s0 % s1))
                 else:
                     state.stack_push(BVV_0 if s1 == 0 else s0 % s1)
-            elif op == "SMOD":
+            elif op == opcode_values.SMOD:
                 s0, s1 = (
                     state.stack_pop(),
                     state.stack_pop(),
@@ -272,7 +272,7 @@ class SymbolicMachine:
                     state.stack_push(claripy.If(s1 == 0, BVV_0, s0.SMod(s1)))
                 else:
                     state.stack_push(BVV_0 if s1 == 0 else s0.SMod(s1))
-            elif op == "ADDMOD":
+            elif op == opcode_values.ADDMOD:
                 s0, s1, s2 = state.stack_pop(), state.stack_pop(), state.stack_pop()
                 try:
                     s2 = solution(s2)
@@ -280,7 +280,7 @@ class SymbolicMachine:
                     state.stack_push(claripy.If(s2 == 0, BVV_0, (s0 + s1) % s2))
                 else:
                     state.stack_push(BVV_0 if s2 == 0 else (s0 + s1) % s2)
-            elif op == "MULMOD":
+            elif op == opcode_values.MULMOD:
                 s0, s1, s2 = state.stack_pop(), state.stack_pop(), state.stack_pop()
                 try:
                     s2 = solution(s2)
@@ -288,38 +288,38 @@ class SymbolicMachine:
                     state.stack_push(claripy.If(s2 == 0, BVV_0, (s0 * s1) % s2))
                 else:
                     state.stack_push(BVV_0 if s2 == 0 else (s0 * s1) % s2)
-            elif op == "EXP":
+            elif op == opcode_values.EXP:
                 base, exponent = solution(state.stack_pop()), state.stack_pop()
                 if base == 2:
                     state.stack_push(1 << exponent)
                 else:
                     exponent = solution(exponent)
                     state.stack_push(claripy.BVV(base ** exponent, 256))
-            elif op == "LT":
+            elif op == opcode_values.LT:
                 s0, s1 = (
                     not_bool(state.stack_pop()),
                     not_bool(state.stack_pop()),
                 )  # pylint:disable=invalid-name
                 state.stack_push(claripy.ULT(s0, s1))
-            elif op == "GT":
+            elif op == opcode_values.GT:
                 s0, s1 = (
                     not_bool(state.stack_pop()),
                     not_bool(state.stack_pop()),
                 )  # pylint:disable=invalid-name
                 state.stack_push(claripy.UGT(s0, s1))
-            elif op == "SLT":
+            elif op == opcode_values.SLT:
                 s0, s1 = (
                     not_bool(state.stack_pop()),
                     not_bool(state.stack_pop()),
                 )  # pylint:disable=invalid-name
                 state.stack_push(claripy.SLT(s0, s1))
-            elif op == "SGT":
+            elif op == opcode_values.SGT:
                 s0, s1 = (
                     not_bool(state.stack_pop()),
                     not_bool(state.stack_pop()),
                 )  # pylint:disable=invalid-name
                 state.stack_push(claripy.SGT(s0, s1))
-            elif op == "SIGNEXTEND":
+            elif op == opcode_values.SIGNEXTEND:
                 s0, s1 = (
                     state.stack_pop(),
                     state.stack_pop(),
@@ -337,7 +337,7 @@ class SymbolicMachine:
                     )
                 else:
                     state.stack_push(s1)
-            elif op == "EQ":
+            elif op == opcode_values.EQ:
                 s0, s1 = state.stack_pop(), state.stack_pop()
                 if isinstance(s0, claripy.ast.Bool) and isinstance(
                     s1, claripy.ast.Bool
@@ -345,13 +345,13 @@ class SymbolicMachine:
                     state.stack_push(s0 == s1)
                 else:
                     state.stack_push(not_bool(s0) == not_bool(s1))
-            elif op == "ISZERO":
+            elif op == opcode_values.ISZERO:
                 condition = state.stack_pop()
                 if isinstance(condition, claripy.ast.Bool):
                     state.stack_push(claripy.Not(condition))
                 else:
                     state.stack_push(condition == BVV_0)
-            elif op == "AND":
+            elif op == opcode_values.AND:
                 s0, s1 = make_consistent(state.stack_pop(), state.stack_pop())
                 if isinstance(s0, claripy.ast.Bool) and isinstance(
                     s1, claripy.ast.Bool
@@ -359,7 +359,7 @@ class SymbolicMachine:
                     state.stack_push(s0 and s1)
                 else:
                     state.stack_push(s0 & s1)
-            elif op == "OR":
+            elif op == opcode_values.OR:
                 s0, s1 = make_consistent(state.stack_pop(), state.stack_pop())
                 if isinstance(s0, claripy.ast.Bool) and isinstance(
                     s1, claripy.ast.Bool
@@ -367,66 +367,65 @@ class SymbolicMachine:
                     state.stack_push(s0 or s1)
                 else:
                     state.stack_push(s0 | s1)
-            elif op == "XOR":
+            elif op == opcode_values.XOR:
                 s0, s1 = make_consistent(state.stack_pop(), state.stack_pop())
                 state.stack_push(s0 ^ s1)
-            elif op == "NOT":
+            elif op == opcode_values.NOT:
                 state.stack_push(~state.stack_pop())
-            elif op == "BYTE":
+            elif op == opcode_values.BYTE:
                 s0, s1 = (
                     state.stack_pop(),
                     state.stack_pop(),
                 )  # pylint:disable=invalid-name
                 state.stack_push(s1.LShR(claripy.If(s0 > 31, 32, 31 - s0) * 8) & 0xFF)
 
-            elif op == "PC":
+            elif op == opcode_values.PC:
                 state.stack_push(bvv(state.pc))
-            elif op == "GAS":
+            elif op == opcode_values.GAS:
                 state.stack_push(state.env.gas)
-            elif op == "ADDRESS":
+            elif op == opcode_values.ADDRESS:
                 state.stack_push(state.env.address)
-            elif op == "BALANCE":
+            elif op == opcode_values.BALANCE:
                 addr = solution(state.stack_pop())
                 if addr != solution(state.env.address):
                     raise utils.InterpreterError(
                         state, "Can only query balance of the current contract for now"
                     )
                 state.stack_push(state.env.balance)
-            elif op == "ORIGIN":
+            elif op == opcode_values.ORIGIN:
                 state.stack_push(state.env.origin)
-            elif op == "CALLER":
+            elif op == opcode_values.CALLER:
                 state.stack_push(state.env.caller)
-            elif op == "CALLVALUE":
+            elif op == opcode_values.CALLVALUE:
                 state.stack_push(state.env.value)
-            elif op == "BLOCKHASH":
+            elif op == opcode_values.BLOCKHASH:
                 block_num = state.stack_pop()
                 if block_num not in state.env.block_hashes:
                     state.env.block_hashes[block_num] = claripy.BVS(
                         "blockhash[%s]" % block_num, 256
                     )
                 state.stack_push(state.env.block_hashes[block_num])
-            elif op == "TIMESTAMP":
+            elif op == opcode_values.TIMESTAMP:
                 state.stack_push(state.env.block_timestamp)
-            elif op == "NUMBER":
+            elif op == opcode_values.NUMBER:
                 state.stack_push(state.env.block_number)
-            elif op == "COINBASE":
+            elif op == opcode_values.COINBASE:
                 state.stack_push(state.env.coinbase)
-            elif op == "DIFFICULTY":
+            elif op == opcode_values.DIFFICULTY:
                 state.stack_push(state.env.difficulty)
-            elif op == "POP":
+            elif op == opcode_values.POP:
                 state.stack_pop()
-            elif op == "JUMP":
+            elif op == opcode_values.JUMP:
                 addr = solution(state.stack_pop())
                 if (
                     addr >= len(self.code)
-                    or self.code[addr] != "JUMPDEST"
-                    or addr == state.pc
+                    or self.code[addr] != opcode_values.JUMPDEST
                 ):
                     raise utils.CodeError("Invalid jump (%i)" % addr)
                 state.pc = addr
                 self.add_branch(state)
                 return
-            elif op == "JUMPI":
+            elif op == opcode_values.JUMPI:
                 addr, condition = solution(state.stack_pop()), state.stack_pop()
                 state_false = state.copy()
                 if isinstance(condition, claripy.ast.Bool):
@@ -438,28 +437,26 @@ class SymbolicMachine:
                 state_false.pc += 1
                 self.add_branch(state_false)
                 state.pc = addr
-                if state.pc >= len(self.code) or self.code[state.pc] != "JUMPDEST":
+                if state.pc >= len(self.code) or self.code[state.pc] != opcode_values.JUMPDEST:
                     raise utils.CodeError("Invalid jump (%i)" % (state.pc - 1))
                 self.add_branch(state)
                 return
-            elif op.startswith("PUSH"):
-                pushnum = int(op[4:])
-                push_data = self.code[state.pc + 1]
+            elif opcode_values.PUSH1 <= op <= opcode_values.PUSH32:
+                pushnum = op - opcode_values.PUSH1 + 1
+                raw_value = self.code.read(pushnum)
                 state.pc += pushnum
-                if hasattr(push_data, "symbolic"):  # If it's already a BV
-                    state.stack_push(push_data)
-                else:
-                    state.stack_push(bvv(push_data))
-            elif op.startswith("DUP"):
-                depth = int(op[3:])
+                state.stack_push(bvv(
+                    int.from_bytes(raw_value, byteorder='big')))
+            elif opcode_values.DUP1 <= op <= opcode_values.DUP16:
+                depth = op - opcode_values.DUP1 + 1
                 state.stack_push(state.stack[-depth])
-            elif op.startswith("SWAP"):
-                depth = int(op[4:])
+            elif opcode_values.SWAP1 <= op <= opcode_values.SWAP16:
+                depth = op - opcode_values.SWAP1 + 1
                 temp = state.stack[-depth - 1]
                 state.stack[-depth - 1] = state.stack[-1]
                 state.stack[-1] = temp
-            elif op.startswith("LOG"):
-                depth = int(op[3:])
+            elif opcode_values.LOG0 <= op <= opcode_values.LOG4:
+                depth = op - opcode_values.LOG0
                 mstart, msz = (
                     state.stack_pop(),
                     state.stack_pop(),
@@ -467,16 +464,16 @@ class SymbolicMachine:
                 topics = [
                     state.stack_pop() for x in range(depth)
                 ]  # pylint:disable=unused-variable
-            elif op == "SHA3":
+            elif op == opcode_values.SHA3:
                 start, length = solution(state.stack_pop()), solution(state.stack_pop())
                 memory = state.memory.read(start, length)
                 state.stack_push(Sha3(memory))
-            elif op == "STOP":
+            elif op == opcode_values.STOP:
                 return True
-            elif op == "RETURN":
+            elif op == opcode_values.RETURN:
                 return True
 
-            elif op == "CALLDATALOAD":
+            elif op == opcode_values.CALLDATALOAD:
                 indexes = state.stack_pop()
                 try:
                     index = solution(indexes)
@@ -486,9 +483,9 @@ class SymbolicMachine:
                     return
                 state.solver.add(state.env.calldata_size >= index + 32)
                 state.stack_push(state.env.calldata.read(index, 32))
-            elif op == "CALLDATASIZE":
+            elif op == opcode_values.CALLDATASIZE:
                 state.stack_push(state.env.calldata_size)
-            elif op == "CALLDATACOPY":
+            elif op == opcode_values.CALLDATACOPY:
                 old_state = state.copy()
                 mstart, dstart, size = (
                     state.stack_pop(),
@@ -503,16 +500,16 @@ class SymbolicMachine:
                     return
                 state.memory.copy_from(state.env.calldata, mstart, dstart, size)
                 state.solver.add(state.env.calldata_size >= dstart + size)
-            elif op == "CODESIZE":
+            elif op == opcode_values.CODESIZE:
                 state.stack_push(bvv(len(self.code)))
-            elif op == "EXTCODESIZE":
+            elif op == opcode_values.EXTCODESIZE:
                 addr = state.stack_pop()
                 if (addr == state.env.address).is_true():
                     state.stack_push(bvv(len(self.code)))
                 else:
                     # TODO: Improve that... It's clearly not constraining enough.
                     state.stack_push(claripy.BVS("EXTCODESIZE[%s]" % addr, 256))
-            elif op == "CODECOPY":
+            elif op == opcode_values.CODECOPY:
                 mem_start, code_start, size = [
                     solution(state.stack_pop()) for _ in range(3)
                 ]
@@ -526,18 +523,18 @@ class SymbolicMachine:
                     else:
                         state.memory.write(mem_start + i, 1, claripy.BVV(0, 8))
 
-            elif op == "MLOAD":
+            elif op == opcode_values.MLOAD:
                 index = solution(state.stack_pop())
                 state.stack_push(state.memory.read(index, 32))
-            elif op == "MSTORE":
+            elif op == opcode_values.MSTORE:
                 index, value = solution(state.stack_pop()), not_bool(state.stack_pop())
                 state.memory.write(index, 32, value)
-            elif op == "MSTORE8":
+            elif op == opcode_values.MSTORE8:
                 index, value = solution(state.stack_pop()), not_bool(state.stack_pop())
                 state.memory.write(index, 1, value[7:0])
-            elif op == "MSIZE":
+            elif op == opcode_values.MSIZE:
                 state.stack_push(bvv(state.memory.size()))
-            elif op == "SLOAD":
+            elif op == opcode_values.SLOAD:
                 # TODO: This is inaccurate, because the storage can change in a single transaction.
                 # See commit d98cab834f8f359f01ef805256d179f5529ebe30.
                 key = state.stack_pop()
@@ -547,14 +544,14 @@ class SymbolicMachine:
                     if key not in state.storage_read:
                         state.storage_read[key] = claripy.BVS("storage[%s]" % key, 256)
                     state.stack_push(state.storage_read[key])
-            elif op == "SSTORE":
+            elif op == opcode_values.SSTORE:
                 # TODO: This is inaccurate, because the storage can change in a single transaction.
                 # See commit d98cab834f8f359f01ef805256d179f5529ebe30.
                 key = state.stack_pop()
                 value = state.stack_pop()
                 state.storage_written[key] = value
 
-            elif op == "CALL":
+            elif op == opcode_values.CALL:
                 state.pc += 1
 
                 # First possibility: the call fails (always possible with a call stack big enough)
@@ -578,14 +575,12 @@ class SymbolicMachine:
                 self.add_branch(state)
                 return
 
-            elif op == "SUICIDE":
+            elif op == opcode_values.SELFDESTRUCT:
                 state.suicide_to = state.stack[-1]
                 return True
 
-            elif op == "REVERT":
+            elif op == opcode_values.REVERT:
                 return
-            elif op.startswith("INVALID "):
-                raise utils.CodeError("Invalid opcode at %i: %s" % (state.pc, op))
             else:
                 raise utils.InterpreterError(state, "Unknown opcode %s" % op)
 
@@ -686,8 +681,10 @@ class SymbolicMachine:
         number of instructions."""
         total_lines = 0
         covered_lines = 0
-        for pc, instruction in enumerate(self.code):  # pylint:disable=invalid-name
-            if instruction == "JUMPDEST" or isinstance(instruction, numbers.Number):
+        for pc, instruction in enumerate(self.code):
+            if pc == len(self.code):
+                break
+            if instruction == opcode_values.JUMPDEST or not self.code.is_valid_opcode(pc):
                 continue
             total_lines += 1
             covered_lines += bool(self.coverage[pc])
