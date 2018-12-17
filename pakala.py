@@ -31,6 +31,7 @@ from pakala import summary
 from web3.auto import w3
 from web3 import Web3
 import web3
+import coloredlogs
 
 
 def err_exit(message):
@@ -140,9 +141,9 @@ analyzer.add_argument(
 args = parser.parse_args()
 
 if args.v.isnumeric():
-    logging.basicConfig(level=int(args.v))
+    coloredlogs.install(level=int(args.v))
 elif hasattr(logging, args.v.upper()):
-    logging.basicConfig(level=getattr(logging, args.v.upper()))
+    coloredlogs.install(level=getattr(logging, args.v.upper()))
 else:
     err_exit("Logging should be DEBUG/INFO/WARNING/ERROR.")
 

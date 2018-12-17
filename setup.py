@@ -45,7 +45,7 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['trinity', 'claripy', 'web3'],
+    install_requires=['trinity', 'claripy', 'web3', 'coloredlogs'],
 
     extras_require={
         'test': ['mock'],

@@ -2,3 +2,4 @@ trinity
 claripy
 mock
 web3
+coloredlogs
