@@ -1,4 +1,4 @@
-trinity
+py-evm
 claripy
 mock
 web3
