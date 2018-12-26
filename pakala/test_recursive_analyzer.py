@@ -4,7 +4,7 @@ import logging
 import random
 import itertools
 
-from pakala.recursive_analyzer import RecursiveAnalyzer
+from pakala.recursive_analyzer import RecursiveAnalyzer, with_new_env
 from pakala.analyzer import FakeStorage
 from pakala.env import Env
 from pakala.state import State
@@ -16,6 +16,45 @@ from web3 import Web3
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("claripy").setLevel(logging.ERROR)
+
+
+class TestWithNewEnv(unittest.TestCase):
+    def test_with_new_env(self):
+        env = Env(b"")
+        state = State(env)
+
+        storage_0 = claripy.BVS("storage[0]", 256)
+        storage_1 = claripy.BVS("storage[0]", 256)
+        storage_2 = claripy.BVS("storage[0]", 256)
+        state.storage_read[utils.bvv(0)] = storage_0
+        state.storage_read[utils.bvv(1)] = storage_1
+        state.storage_read[utils.bvv(2)] = storage_2
+        state.storage_written[utils.bvv(0)] = utils.bvv(0)
+        state.storage_written[utils.bvv(1)] = utils.bvv(0)
+        state.storage_written[utils.bvv(2)] = utils.bvv(0)
+
+        state.calls.append([utils.bvv(1), storage_0 + storage_1 + storage_2,
+                            utils.bvv(2), 5 * (storage_0 + storage_1 + storage_2)])
+        state.solver.add(storage_0 == 42)
+        state.solver.add(storage_1 == 0)
+        state.solver.add(storage_2 == 0)
+
+        self.assertEqual(state.solver.eval(state.calls[0][1], 2),
+                         (42,))
+
+        for i in range(3):
+            new_state = with_new_env(state)
+
+            self.assertIsNot(state.env.value, new_state.env.value)
+            self.assertIsNot(state.storage_read[utils.bvv(0)],
+                            new_state.storage_read[utils.bvv(0)])
+            self.assertIsNot(state.storage_read[utils.bvv(1)],
+                            new_state.storage_read[utils.bvv(1)])
+            self.assertIsNot(state.storage_read[utils.bvv(2)],
+                            new_state.storage_read[utils.bvv(2)])
+
+            self.assertEqual(new_state.solver.eval(state.calls[0][1], 2),
+                            (42,))
 
 
 class TestCheckStates(unittest.TestCase):

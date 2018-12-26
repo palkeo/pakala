@@ -12,9 +12,15 @@ from pakala.state import State
 class TestSha3Support(unittest.TestCase):
     def test_sha3_equality(self):
         a = claripy.BVV(1, 256)
-        b = claripy.BVV(2, 256)
-        self.assertEqual(Sha3(a), Sha3(claripy.BVV(1, 256)))
-        self.assertNotEqual(Sha3(a), Sha3(b))
+        s = get_solver()
+        s.add(Sha3(a) == Sha3(claripy.BVV(1, 256)))
+        self.assertTrue(s.satisfiable())
+
+    def test_sha3_unequality(self):
+        a = claripy.BVV(1, 256)
+        s = get_solver()
+        s.add(Sha3(a) != Sha3(claripy.BVV(1, 256)))
+        self.assertFalse(s.satisfiable())
 
     def test_solver_basic(self):
         s = get_solver()

@@ -114,12 +114,12 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
     def _append_state(self, composite_state, state):
         # TODO: Simplify/split that function. A bit too complex.
         # May fail because pprint compare claripy symbols. So only if needed.
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                "_append_state: appending state %s\nto composite state %s",
-                pprint.pformat(state.as_dict()),
-                pprint.pformat(composite_state.as_dict()),
-            )
+        #if logger.isEnabledFor(logging.DEBUG):
+        #    logger.debug(
+        #        "_append_state: appending state %s\nto composite state %s",
+        #        pprint.pformat(state.as_dict()),
+        #        pprint.pformat(composite_state.as_dict()),
+        #    )
 
         assert composite_state.selfdestruct_to is None
 
@@ -192,13 +192,13 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 composite_state.storage_written[key] = val
 
         # May fail because pprint compare claripy symbols. So only if needed.
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                "_append_state: found states: %s",
-                pprint.pformat(
-                    [composite_state.as_dict() for composite_state in composite_states]
-                ),
-            )
+        #if logger.isEnabledFor(logging.DEBUG):
+        #    logger.debug(
+        #        "_append_state: found states: %s",
+        #        pprint.pformat(
+        #            [composite_state.as_dict() for composite_state in composite_states]
+        #        ),
+        #    )
 
         return composite_states
 
