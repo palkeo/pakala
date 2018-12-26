@@ -39,7 +39,7 @@ BVV_0 = bvv(0)
 BVV_1 = bvv(1)
 
 # interesting values aligned to classic parameters.
-CALLDATASIZE_FUZZ = [min, max, 4, 32, 36, 64, 68, 100, 132, 164, 196]
+CALLDATASIZE_FUZZ = [4, 32, 36, 64, 68, 100, 132, 164, 196]
 
 
 def not_bool(variable):
