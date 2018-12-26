@@ -48,12 +48,21 @@ def ethWeiAmount(arg):
     return Web3.toWei(float(m.group(1)), m.group(2))
 
 
+def addressOrStdin(s):
+    if s == '-':
+        return s
+    if not re.match(r"^0x([0-9a-fA-F]){40}$", s):
+        raise argparse.ArgumentError("Invalid address.")
+    return Web3.toChecksumAddress(s)
+
+
 parser = argparse.ArgumentParser(
     description="Find exploitable Ethereum smart contracts."
 )
 
 parser.add_argument(
     "contract_addr",
+    type=addressOrStdin,
     help="Address of the contract to analyze. "
     "Use '-' for reading runtime bytecode from stdin instead.",
 )
