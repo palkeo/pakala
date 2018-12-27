@@ -660,7 +660,7 @@ class SymbolicMachine:
 
         logger.debug("List of outcomes:")
         for outcome in self.outcomes:
-            logger.debug(outcome)
+            logger.debug(outcome.debug_string())
 
     def add_outcome(self, state):
         """Add an outcome to the list."""

@@ -1,4 +1,6 @@
 import logging
+import pprint
+import json
 
 from pakala import memory
 from pakala import utils
@@ -47,7 +49,7 @@ class State(object):
             self.solver,
         )
 
-    def as_dict(self):
+    def _as_dict(self):
         return {
             "selfdestruct_to": self.selfdestruct_to,
             "calls": self.calls,
@@ -56,6 +58,26 @@ class State(object):
             "env": None if self.env is None else self.env.as_dict(),
             "solver": self.solver.as_dict(),
         }
+
+    def debug_string(self):
+        WIDTH = 90  # Arbitrary choice.
+        try:
+            return pprint.pformat(self._as_dict(), width=WIDTH)
+        except Exception:
+            # This can happen when pprint is trying to evaluate a claripy
+            # object for pretty-printing (during sorted()) and there is no
+            # simple way to avoid it.
+            # Let's try to pprint what we can. Otherwise fallback to repr().
+            s = '{\n'
+            for k, v in self._as_dict().items():
+                s += '"%s": ' % k
+                try:
+                    s += pprint.pformat(v, width=WIDTH)
+                except Exception:
+                    s += repr(v)
+                s += ',\n'
+            s += '}'
+            return s
 
     def clean(self):
         """Clean the state, when it won't be executed anymore and we are only
