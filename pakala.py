@@ -20,7 +20,6 @@ import codecs
 import logging
 import sys
 import re
-import pprint
 
 from pakala import sm
 from pakala import recursive_analyzer
@@ -257,13 +256,13 @@ if bug:
     print("=================== Bug found! ===================")
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         print("Composite state:")
-        pprint.pprint(bug[0].as_dict())
+        print(bug[0].debug_string())
         print()
         print()
     print("Path:")
     for state in bug[1]:
         print()
-        pprint.pprint(state.as_dict())
+        print(state.debug_string())
     print("=================== Bug found! ===================")
 else:
     print("Nothing to report.")

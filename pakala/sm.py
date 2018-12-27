@@ -644,9 +644,10 @@ class SymbolicMachine:
             self.add_partial_outcome(state)
 
         logger.info(
-            "Analysis finished with %i outcomes (%i interesting), " "coverage is %i%%",
+            "Analysis finished with %i outcomes (%i interesting, %i unfinished), " "coverage is %i%%",
             len(self.outcomes),
             sum(int(o.is_interesting()) for o in self.outcomes),
+            len(self.partial_outcomes),
             int(self.get_coverage() * 100),
         )
 
@@ -664,14 +665,14 @@ class SymbolicMachine:
 
     def add_outcome(self, state):
         """Add an outcome to the list."""
-        logger.debug("Adding outcome: %r", state)
         state.clean()
+        logger.debug("Adding outcome: %s", state.debug_string())
         self.outcomes.append(state)
 
     def add_partial_outcome(self, state):
         """Add an outcome to the list of partial outcomes."""
-        logger.debug("Adding partial outcome: %r", state)
         state.clean()
+        logger.debug("Adding partial outcome: %s", state.debug_string())
         self.partial_outcomes.append(state)
 
     def get_coverage(self):
