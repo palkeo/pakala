@@ -126,6 +126,14 @@ environment.add_argument(
     help="Use the code/balance/storage at that block instead of latest.",
 )
 
+symbolic = parser.add_argument_group("symbolic execution tweaks")
+symbolic.add_argument(
+    "-z",
+    "--disable-fuzzing",
+    action="store_true",
+    help="Disable forced concretization of symbols where we need a concrete value.",
+)
+
 analyzer = parser.add_argument_group("analyzer tweaks")
 analyzer.add_argument(
     "-m",
@@ -214,7 +222,7 @@ else:
 
 print("Starting symbolic execution step...")
 
-s = sm.SymbolicMachine(e)
+s = sm.SymbolicMachine(e, fuzz=not args.disable_fuzzing)
 s.execute(timeout_sec=args.exec_timeout)
 
 print("Symbolic execution finished with coverage %i%%." % int(s.get_coverage() * 100))

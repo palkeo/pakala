@@ -64,7 +64,7 @@ class SymbolicMachine:
     """Class to represent a state of a EVM program, and execute it symbolically.
     """
 
-    def __init__(self, env):
+    def __init__(self, env, fuzz=True):
         self.code = env.code
         logger.debug("Initializing symbolic machine with source code: %s", self.code)
         # For use by heapq only. Contains couples (score, state).
@@ -75,7 +75,7 @@ class SymbolicMachine:
         self.outcomes = []
         # List of all the place where we didn't know how to continue execution
         self.partial_outcomes = []
-        self.fuzz = True
+        self.fuzz = fuzz
         self.code_errors = collections.Counter()
         self.interpreter_errors = collections.Counter()
         self.add_branch(State(env))
