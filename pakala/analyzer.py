@@ -44,7 +44,7 @@ class BaseAnalyzer(object):
         )
 
     def _read_storage_key(self, key):
-        return self.web3.toInt(hexstr=self.web3.eth.getStorageAt(self.hex_addr, key))
+        return self.web3.toInt(self.web3.eth.getStorageAt(self.hex_addr, key))
 
     def _fill_actual_storage(self):
         try:
