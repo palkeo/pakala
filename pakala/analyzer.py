@@ -8,6 +8,11 @@ from pakala import utils
 from web3 import Web3
 
 
+# We can load up to this many keys from the contract storage. More than that
+# and we won't load them all, and read them lazily instead (which is less precise).
+MAX_STORAGE_KEYS = 16
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,38 +27,93 @@ class BaseAnalyzer(object):
         self.web3.eth.defaultBlock = block
         self.max_wei_to_send = max_wei_to_send
         self.min_wei_to_receive = min_wei_to_receive
-        self.storage_cache = {}
+
+        self.actual_storage = None
+
+        # Whether or not actual_storage is guaranteed to contain all the storage,
+        # or just a subset of it. Will be False for contracts with a lot of keys
+        # so that we cannot load them all.
+        # For testing we can replace actual_storage with a dict so it's never
+        # actually filled. In that case we can assume it's exhaustive.
+        self.actual_storage_exhaustive = True
+
+    @property
+    def hex_addr(self):
+        return self.web3.toChecksumAddress(
+            utils.number_to_address(utils.bvv_to_number(self.address))
+        )
+
+    def _read_storage_key(self, key):
+        return self.web3.toInt(hexstr=self.web3.eth.getStorageAt(self.hex_addr, key))
+
+    def _fill_actual_storage(self):
+        try:
+            storage_keys = [
+                self.web3.toInt(hexstr=k)
+                for k in self.web3.parity.listStorageKeys(
+                    self.hex_addr, MAX_STORAGE_KEYS, None, self.web3.eth.defaultBlock
+                )
+            ]
+        except Exception as e:
+            # If we cannot list storage keys, let's read the beginning of the
+            # space, and below we will mark that it's not exhaustive anyway.
+            logger.warning(
+                "Cannot list storage keys (%s). We will loose a bit of accuracy. "
+                "Try to use a node that supports the parity_listStorageKeys RPC. ",
+                e.__class__.__name__,
+            )
+            storage_keys = list(range(MAX_STORAGE_KEYS))
+
+        assert len(storage_keys) <= MAX_STORAGE_KEYS
+        self.actual_storage_exhaustive = len(storage_keys) < MAX_STORAGE_KEYS
+
+        self.actual_storage = {k: self._read_storage_key(k) for k in storage_keys}
+
+        logger.info(
+            "Loaded %i storage slots from the contract (%s). %i non-zero.",
+            len(storage_keys),
+            "exhaustive" if self.actual_storage_exhaustive else "non-exhaustive",
+            sum(1 for v in self.actual_storage.values() if v != 0),
+        )
+        logger.debug("actual_storage: %r", self.actual_storage)
 
     def _read_storage(self, state, key):
-        # TODO: We do an approximation here: if it cannot be computed or it can
-        # be multiple things, we assume the initial storage is 0...
-        # Instead we could use a cascade of claripy.If(key, value, claripy.If(...
-        # reflecting the actual storage (if there are not too many keys in storage.
         logger.debug("Reading storage %r" % key)
-        try:
-            keys = state.solver.eval(key, 2)
-            if len(keys) > 1:
-                logger.info("Multiple values possible for key %r", key)
-                return utils.bvv(0)
-            assert len(keys) == 1
-            key = keys[0]
-            assert isinstance(key, numbers.Number)
-        except claripy.errors.UnsatError as e:
-            # Should not be too bad, because for the same key we will reuse the
-            # same cache.
-            logger.debug("Encountered an exception when resolving key %r: %r", key, e)
-            return utils.bvv(0)
 
-        if key in self.storage_cache:
-            value = self.storage_cache[key]
-        else:
-            hex_addr = self.web3.toChecksumAddress(
-                utils.number_to_address(utils.bvv_to_number(self.address))
-            )
-            value = self.web3.toInt(self.web3.eth.getStorageAt(hex_addr, key))
-            self.storage_cache[key] = value
+        if self.actual_storage is None:
+            self._fill_actual_storage()
 
-        return utils.bvv(value)
+        # If our storage is not exhaustive, let's try to concretize the key and read the
+        # corresponding storage directly.
+        if not self.actual_storage_exhaustive:
+            try:
+                concrete_keys = state.solver.eval(key, 2)
+            except claripy.errors.UnsatError as e:
+                # We will lose accuracy, and assume that our actual_storage is exhaustive...
+                logger.debug(
+                    "Encountered an exception when resolving key %r: %r", key, e
+                )
+            else:
+                for concrete_key in concrete_keys:
+                    if concrete_key not in self.actual_storage:
+                        self.actual_storage[concrete_key] = self._read_storage_key(
+                            concrete_key
+                        )
+                if len(concrete_keys) == 1:
+                    return self.actual_storage[concrete_keys[0]]
+                else:
+                    # We will lose accuracy, and assume that our actual_storage is exhaustive...
+                    logger.debug(
+                        "Non-exhaustive storage and multiple values possible for key %r",
+                        key,
+                    )
+
+        symbolic_storage = utils.bvv(0)  # When uninitialized: 0
+        for k, v in self.actual_storage.items():
+            if v != 0:
+                symbolic_storage = claripy.If(key == k, v, symbolic_storage)
+
+        return symbolic_storage
 
     def check_state(self, state, path=None):
         """Check a reachable state for bugs"""
@@ -149,29 +209,3 @@ class Analyzer(BaseAnalyzer):
         super().__init__(*args, **kwargs)
         self.caller = caller
         self.address = address
-
-
-class FakeStorage(dict):
-    """For testing, you can override the storage_cache with an instance of this
-    class. This allow you to simulate storage for a contract, and prevent the
-    code to try to fetch it from web3. Instead it will crash if it tries to
-    access something that you didn't specify."""
-
-    def __contains__(self, key):
-        if not super().__contains__(key):
-            raise KeyError(
-                "The analyzer is trying to access a FakeStorage"
-                " key that we didn't specify: '%s'." % key
-            )
-        return True
-
-
-class EmptyStorage(object):
-    """For testing, you can override the storage_cache with an instance of this
-    class, which will simulate a completely empty storage."""
-
-    def __contains__(self, key):
-        return True
-
-    def __getitem__(self, key):
-        return 0

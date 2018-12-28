@@ -1,8 +1,9 @@
 import claripy
 import unittest
+from unittest.mock import patch
 import logging
 
-from pakala.analyzer import Analyzer, FakeStorage
+from pakala.analyzer import Analyzer
 from pakala.env import Env
 from pakala.state import State
 from pakala import utils
@@ -113,7 +114,7 @@ class TestCheckState(unittest.TestCase):
         self.assertFalse(self.check_state(self.state))
 
     def test_read_concrete(self):
-        self.analyzer.storage_cache = FakeStorage({0: 0xBAD1DEA})
+        self.analyzer.actual_storage = {0: 0xBAD1DEA}
 
         self.state.storage_read[utils.bvv(0)] = claripy.BVS("storage[0]", 256)
         self.state.selfdestruct_to = self.state.storage_read[utils.bvv(0)]
@@ -126,10 +127,43 @@ class TestCheckState(unittest.TestCase):
         )
         self.assertTrue(self.check_state(self.state))
 
-    def test_fakestorage_raises(self):
-        """If the code accesses a FakeStorage key that we didn't specify,
-           it should crash (only meant for testing)."""
-        self.analyzer.storage_cache = FakeStorage({42: 0xBAD1DEA})
+    def test_non_exhaustive_storage(self):
+        self.analyzer.actual_storage = {1: 0xBAD1DEA}
+        self.analyzer.actual_storage_exhaustive = False
+
         self.state.storage_read[utils.bvv(0)] = claripy.BVS("storage[0]", 256)
-        with self.assertRaises(KeyError):
-            self.check_state(self.state)
+        self.state.selfdestruct_to = self.state.storage_read[utils.bvv(0)]
+
+        # Suicide to storage[0] that contains our address (state.env.caller)
+        with patch.object(self.analyzer, "_read_storage_key") as mock_read_storage_key:
+            mock_read_storage_key.return_value = utils.bvv_to_number(
+                self.state.env.caller
+            )
+            self.assertTrue(self.check_state(self.state))
+            mock_read_storage_key.assert_called_with(0)
+
+    def test_non_exhaustive_storage2(self):
+        """Same as the previous test, but we suicide to 0 so it doesn't work."""
+        self.analyzer.actual_storage = {1: 0xBAD1DEA}
+        self.analyzer.actual_storage_exhaustive = False
+
+        self.state.storage_read[utils.bvv(0)] = claripy.BVS("storage[0]", 256)
+        self.state.selfdestruct_to = self.state.storage_read[utils.bvv(0)]
+
+        # Same as above, but we suicide to 0 instead of caller.
+        with patch.object(self.analyzer, "_read_storage_key") as mock_read_storage_key:
+            mock_read_storage_key.return_value = 0
+            self.assertFalse(self.check_state(self.state))
+            mock_read_storage_key.assert_called_with(0)
+
+    def test_exhaustive_storage(self):
+        self.analyzer.actual_storage = {1: 0xBAD1DEA}
+        self.analyzer.actual_storage_exhaustive = True
+
+        self.state.storage_read[utils.bvv(0)] = claripy.BVS("storage[0]", 256)
+        self.state.selfdestruct_to = self.state.storage_read[utils.bvv(0)]
+
+        # Same as above, but we suicide to 0 instead of caller.
+        with patch.object(self.analyzer, "_read_storage_key") as mock_read_storage_key:
+            self.assertFalse(self.check_state(self.state))
+            mock_read_storage_key.assert_not_called()

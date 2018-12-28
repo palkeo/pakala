@@ -70,7 +70,7 @@ class SolidityTest(unittest.TestCase):
                 block='invalid')
 
         # Never contact the blockchain, instead all the storage are 0
-        ra.storage_cache = analyzer.EmptyStorage()
+        ra.actual_storage = {}
 
         bug = ra.check_states(
                 s.outcomes,

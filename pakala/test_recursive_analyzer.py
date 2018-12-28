@@ -5,7 +5,6 @@ import random
 import itertools
 
 from pakala.recursive_analyzer import RecursiveAnalyzer, with_new_env
-from pakala.analyzer import FakeStorage
 from pakala.env import Env
 from pakala.state import State
 from pakala import utils
@@ -33,28 +32,35 @@ class TestWithNewEnv(unittest.TestCase):
         state.storage_written[utils.bvv(1)] = utils.bvv(0)
         state.storage_written[utils.bvv(2)] = utils.bvv(0)
 
-        state.calls.append([utils.bvv(1), storage_0 + storage_1 + storage_2,
-                            utils.bvv(2), 5 * (storage_0 + storage_1 + storage_2)])
+        state.calls.append(
+            [
+                utils.bvv(1),
+                storage_0 + storage_1 + storage_2,
+                utils.bvv(2),
+                5 * (storage_0 + storage_1 + storage_2),
+            ]
+        )
         state.solver.add(storage_0 == 42)
         state.solver.add(storage_1 == 0)
         state.solver.add(storage_2 == 0)
 
-        self.assertEqual(state.solver.eval(state.calls[0][1], 2),
-                         (42,))
+        self.assertEqual(state.solver.eval(state.calls[0][1], 2), (42,))
 
         for i in range(3):
             new_state = with_new_env(state)
 
             self.assertIsNot(state.env.value, new_state.env.value)
-            self.assertIsNot(state.storage_read[utils.bvv(0)],
-                            new_state.storage_read[utils.bvv(0)])
-            self.assertIsNot(state.storage_read[utils.bvv(1)],
-                            new_state.storage_read[utils.bvv(1)])
-            self.assertIsNot(state.storage_read[utils.bvv(2)],
-                            new_state.storage_read[utils.bvv(2)])
+            self.assertIsNot(
+                state.storage_read[utils.bvv(0)], new_state.storage_read[utils.bvv(0)]
+            )
+            self.assertIsNot(
+                state.storage_read[utils.bvv(1)], new_state.storage_read[utils.bvv(1)]
+            )
+            self.assertIsNot(
+                state.storage_read[utils.bvv(2)], new_state.storage_read[utils.bvv(2)]
+            )
 
-            self.assertEqual(new_state.solver.eval(state.calls[0][1], 2),
-                            (42,))
+            self.assertEqual(new_state.solver.eval(state.calls[0][1], 2), (42,))
 
 
 class TestCheckStates(unittest.TestCase):
@@ -72,7 +78,8 @@ class TestCheckStates(unittest.TestCase):
             max_wei_to_send=Web3.toWei(10, "ether"),
             min_wei_to_receive=Web3.toWei(1, "milliether"),
         )
-        self.analyzer.storage_cache = FakeStorage(mock_storage or {})
+        if mock_storage is not None:
+            self.analyzer.actual_storage = mock_storage
         return self.analyzer.check_states(states, timeout=0, max_depth=4)
 
     def get_call(self, value, to=None):
@@ -296,3 +303,51 @@ class TestCheckStates(unittest.TestCase):
                 mock_storage=storage,
             )
         )
+
+    def test_symbolic_storage(self):
+        """Specific test for using a storage key that cannot be symbolized."""
+        state = State(self.env)
+        storage = {10: 1}
+
+        # We write to an arbitrary address
+        state_write = state.copy()
+        state_write.storage_written[
+            state_write.env.calldata.read(4, 32)
+        ] = state_write.env.calldata.read(36, 32)
+
+        # We send twice what we receive, but only if we have 1 at two arbitrary
+        # keys.
+        state_send = state.copy()
+        storage_a = claripy.BVS("storage[a]", 256)
+        storage_b = claripy.BVS("storage[b]", 256)
+        k_a = state_send.env.calldata.read(4, 32)
+        k_b = state_send.env.calldata.read(36, 32)
+        state_send.storage_read[k_a] = storage_a
+        state_send.storage_read[k_b] = storage_b
+        state_send.solver.add(storage_a == 1)
+        state_send.solver.add(storage_b == 1)
+        state_send.calls.append(self.get_call((state.env.value * 128) / 64))
+
+        # If k_a == 10 and k_b == 10, it works!
+        self.assertTrue(self.check_states([state_send], mock_storage=storage))
+        state_send.solver.add(k_a != k_b)
+
+        self.assertFalse(self.check_states([state_send], mock_storage=storage))
+        self.assertFalse(self.check_states([state_write], mock_storage=storage))
+
+        # Now we have to first write, then send.
+        bug = self.check_states([state_send, state_write], mock_storage=storage)
+        self.assertTrue(bug)
+        self.assertEqual(len(bug[1]), 2)
+
+        # If we force k_a to be != 10, we can use k_b == 10 instead.
+        state_send.solver.add(k_a != 10)
+        bug = self.check_states([state_send, state_write], mock_storage=storage)
+        self.assertTrue(bug)
+        self.assertEqual(len(bug[1]), 2)
+
+        # If we force both, it's impossible and we have to do two writes.
+        state_send.solver.add(k_b != 10)
+        bug = self.check_states([state_send, state_write], mock_storage=storage)
+        self.assertTrue(bug)
+        self.assertEqual(len(bug[1]), 3)
