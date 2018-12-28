@@ -226,7 +226,7 @@ s.execute(timeout_sec=args.exec_timeout)
 
 print("Symbolic execution finished with coverage %i%%." % int(s.get_coverage() * 100))
 print(
-    "Outcomes: %i interesting. %i total and %i partial outcomes."
+    "Outcomes: %i interesting. %i total and %i unfinished paths."
     % (
         sum(int(o.is_interesting()) for o in s.outcomes),
         len(s.outcomes),

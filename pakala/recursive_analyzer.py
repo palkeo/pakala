@@ -115,7 +115,8 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
         logger.debug(
             "_append_state: appending state %s\nto composite state %s",
             state.debug_string(),
-            composite_state.debug_string())
+            composite_state.debug_string(),
+        )
 
         assert composite_state.selfdestruct_to is None
 

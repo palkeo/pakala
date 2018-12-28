@@ -152,6 +152,7 @@ class SymbolicMachine:
         logger.debug("Fuzzing will try %s in %s.", variable, to_try)
         for value in to_try:
             new_state = state.copy()
+            new_state.score += 5  # Lower the priority of what we got by fuzzing.
             new_state.solver.add(variable == value)
             self.add_branch(new_state)
 
@@ -644,7 +645,8 @@ class SymbolicMachine:
             self.add_partial_outcome(state)
 
         logger.info(
-            "Analysis finished with %i outcomes (%i interesting, %i unfinished), " "coverage is %i%%",
+            "Analysis finished with %i outcomes (%i interesting, %i unfinished), "
+            "coverage is %i%%",
             len(self.outcomes),
             sum(int(o.is_interesting()) for o in self.outcomes),
             len(self.partial_outcomes),

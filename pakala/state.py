@@ -68,15 +68,15 @@ class State(object):
             # object for pretty-printing (during sorted()) and there is no
             # simple way to avoid it.
             # Let's try to pprint what we can. Otherwise fallback to repr().
-            s = '{\n'
+            s = "{\n"
             for k, v in self._as_dict().items():
                 s += '"%s": ' % k
                 try:
                     s += pprint.pformat(v, width=WIDTH)
                 except Exception:
                     s += repr(v)
-                s += ',\n'
-            s += '}'
+                s += ",\n"
+            s += "}"
             return s
 
     def clean(self):
