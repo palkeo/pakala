@@ -3,3 +3,4 @@ claripy
 mock
 web3
 coloredlogs
+eth-utils

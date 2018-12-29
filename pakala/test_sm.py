@@ -400,7 +400,35 @@ class TestInstructions(unittest.TestCase):
     def test_log(self):
         self.run_code([PUSH1, 0, PUSH1, 0, PUSH1, 0, LOG1])
 
-    # TODO: test_sha3
+    def test_sha3_empty(self):
+        self.run_code([PUSH1, 0, PUSH1, 0, SHA3])
+        self.assertEqual(1, len(self.state.stack))
+        sha3, = self.state.solver.eval(self.state.stack[0], 1)
+        self.assertEqual(hex(sha3),
+                         hex(0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470))
+
+    def test_sha3_zeros(self):
+        self.run_code([PUSH1, 32, PUSH1, 0, SHA3])
+        self.assertEqual(1, len(self.state.stack))
+        sha3, = self.state.solver.eval(self.state.stack[0], 1)
+        self.assertEqual(hex(sha3),
+                         hex(0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563))
+
+    def test_sha3_a_mstore8(self):
+        self.run_code([PUSH1, 0x61, PUSH1, 0, MSTORE8, PUSH1, 1, PUSH1, 0, SHA3])
+        self.assertEqual(1, len(self.state.stack))
+        sha3, = self.state.solver.eval(self.state.stack[0], 1)
+        self.assertEqual(hex(sha3),
+                         # sha3('a')
+                         hex(0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb))
+
+    def test_sha3_a_mstore(self):
+        self.run_code([PUSH1, 0x61, PUSH1, 0, MSTORE, PUSH1, 1, PUSH1, 31, SHA3])
+        self.assertEqual(1, len(self.state.stack))
+        sha3, = self.state.solver.eval(self.state.stack[0], 1)
+        self.assertEqual(hex(sha3),
+                         # sha3('a')
+                         hex(0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb))
 
     def test_stop(self):
         r = self.run_code([STOP])
