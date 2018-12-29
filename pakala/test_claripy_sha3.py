@@ -4,7 +4,7 @@ import functools
 import claripy
 
 from pakala.claripy_sha3 import Sha3
-from pakala.utils import get_solver
+from pakala.utils import get_solver, bvv
 from pakala import env
 from pakala.state import State
 
@@ -79,10 +79,10 @@ class TestSha3Support(unittest.TestCase):
 
         self.assertFalse(s.satisfiable(extra_constraints=[Sha3(in1) == 42]))
         self.assertFalse(s.satisfiable(extra_constraints=[Sha3(in1) == 0]))
-        self.assertTrue(s.satisfiable(extra_constraints=[Sha3(in1) == Sha3(42)]))
-        self.assertTrue(s.satisfiable(extra_constraints=[Sha3(in1) == Sha3(0)]))
+        self.assertTrue(s.satisfiable(extra_constraints=[Sha3(in1) == Sha3(bvv(42))]))
+        self.assertTrue(s.satisfiable(extra_constraints=[Sha3(in1) == Sha3(bvv(0))]))
         self.assertTrue(
-            s.satisfiable(extra_constraints=[Sha3(in1 + 1) + 2 == Sha3(0) + 2])
+            s.satisfiable(extra_constraints=[Sha3(in1 + 1) + 2 == Sha3(bvv(0)) + 2])
         )
 
     def test_solver_recursive(self):
@@ -91,9 +91,9 @@ class TestSha3Support(unittest.TestCase):
         in2 = claripy.BVS("in2", 256)
 
         self.assertFalse(s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == 0]))
-        self.assertFalse(s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(0)]))
+        self.assertFalse(s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(bvv(0))]))
         self.assertTrue(
-            s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(Sha3(0))])
+            s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(Sha3(bvv(0)))])
         )
 
         s.add(Sha3(in1) == Sha3(in2))

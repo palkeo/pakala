@@ -87,9 +87,18 @@ class TestMemory(unittest.TestCase):
         self.assertBEqual(self.mem.read(14, 1), 0)
 
         with self.assertRaises(utils.CodeError):
-            self.mem.read(0, 0)
-        with self.assertRaises(utils.CodeError):
             self.mem.read(999999999999, 32)
+
+    def test_read_write_size_0(self):
+        self.mem.write(0, 0, claripy.BVV(0, 0))
+        self.assertBEqual(self.mem.read(0, 0), claripy.BVV(0, 0))
+        self.assertBEqual(self.mem.read(0, 1), claripy.BVV(0, 8))
+        self.mem.write(0, 1, claripy.BVV(1, 8))
+        self.mem.write(0, 0, claripy.BVV(0, 0))
+        self.assertBEqual(self.mem.read(0, 1), claripy.BVV(1, 8))
+
+        with self.assertRaises(AssertionError):
+            self.mem.write(0, 0, claripy.BVV(1, 8))
 
     def test_size(self):
         self.assertEqual(self.mem.size(), 0)

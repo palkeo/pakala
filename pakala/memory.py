@@ -34,11 +34,12 @@ class Memory(object):
 
     def read(self, addr, size):
         assert size >= 0
-        if size == 0:
-            return claripy.BVV(0, 0)
         if addr + size >= MEMORY_SIZE:
             raise utils.CodeError("Memory.read: memory would exceed MEMORY_SIZE")
         logger.debug("%s.read(%i, %i)" % (self.__class__.__name__, addr, size))
+
+        if size == 0:
+            return claripy.BVV(0, 0)
 
         for iaddr, ivalue in self._mem.items():
             isize = ivalue.size() // 8
@@ -67,16 +68,16 @@ class Memory(object):
 
     def write(self, addr, size, value):
         assert size >= 0
-        if size == 0:
-            return
+        assert value.size() // 8 == size, "BVV size doesn't match size in Memory.write"
         if addr + size >= MEMORY_SIZE:
             raise utils.CodeError("Memory.write: memory would exceed MEMORY_SIZE")
-        if value.size() // 8 != size:
-            raise utils.InterpreterError("BVV size doesn't match size in Memory.write")
 
         logger.debug(
             "%s.write(%i, %i, %r)" % (self.__class__.__name__, addr, size, value)
         )
+
+        if size == 0:
+            return
 
         for iaddr, ivalue in list(self._mem.items()):
             isize = ivalue.size() // 8
