@@ -48,7 +48,7 @@ class TestSymbolicMachine(unittest.TestCase):
         state.solver.add(claripy.BVV(1, 8) == claripy.BVV(0, 8))
         self.sm.add_branch(state)
         self.assertEqual(len(self.sm.branch_queue), 3)
-        self.assertEqual(len(self.sm.code_errors), 2)
+        self.assertEqual(len(self.sm.code_errors), 1)
 
     def test_add_for_fuzzing(self):
         state = self.sm.branch_queue[0][1]

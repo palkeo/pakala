@@ -87,7 +87,6 @@ class SymbolicMachine:
         """
         if not state.solver.satisfiable():
             logger.debug("Avoided adding unsatisfiable state.")
-            self.code_errors["Avoided adding unsatisfiable state"] += 1
             return
 
         if hash(state) in self.states_seen:
