@@ -200,7 +200,13 @@ class BaseAnalyzer(object):
         logger.debug("Extra constraints: %r", constraints)
 
         if state.solver.satisfiable(extra_constraints=constraints):
-            logger.info("Found call bug.")
+            # TODO: Don't use a private claripy method. I wrap it with try/except
+            # in case of failure, because claripy internals tend to change a lot.
+            try:
+                logger.info("Found call bug. Model: %s",
+                            next(state.solver._get_models()).model)
+            except Exception:
+                logger.info("Found call bug.")
             return True
 
         return False
