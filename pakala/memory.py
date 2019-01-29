@@ -105,10 +105,11 @@ class Memory(object):
         self._mem[addr] = value
 
     def copy_from(self, other, start_self, start_other, size):
-        if size < 1:
-            raise utils.CodeError("size < 1 in Memory.copy_from")
+        assert size >= 0
         if start_self + size >= MEMORY_SIZE or start_other + size >= MEMORY_SIZE:
-            raise utils.CodeError("overflow in Memory.copy_from")
+            raise utils.CodeError("Memory.copy_from: memory would exceed MEMORY_SIZE")
+        if size == 0:
+            return
         self.write(start_self, size, CalldataMemoryView(other, start_other, size))
 
     def size(self):
