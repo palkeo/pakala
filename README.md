@@ -25,14 +25,14 @@ It works only with python 3.
 Usage
 -----
 
-Let's look at [0x612f1BDbe93523b7f5036EfA87493B76341726E3](https://etherscan.io/address/0x612f1bdbe93523b7f5036efa87493b76341726e3): the
-constructor doesn't have the same name as the contract.
-Anybody can call HT() and become owner, then call withdraw.
+Let's look at [0xeBE6c7a839A660a0F04BdF6816e2eA182F5d542C](http://eveem.com/code/0xeBE6c7a839A660a0F04BdF6816e2eA182F5d542C):
+it has a ``transfer(address _to, uint256 _value)`` function. It is supposedly protected by a ``require(call.value - _value) >= 0``
+but that condition always holds because we are substracting two unsigned integers, so the result is also an unsigned integer.
 
 Let's scan it:
 
 ```
-./pakala.py 0x612f1BDbe93523b7f5036EfA87493B76341726E3 --force-balance="1 ether"
+./pakala.py 0xeBE6c7a839A660a0F04BdF6816e2eA182F5d542C --force-balance="1 ether"
 ```
 
 The contract balance being 0, we won't be able to have it send us some ethers.
