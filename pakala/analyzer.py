@@ -169,13 +169,10 @@ class BaseAnalyzer(object):
 
         # Suicide
         if state.selfdestruct_to is not None:
-            constraints = (
-                extra_constraints
-                + [
-                    final_balance >= self.min_wei_to_receive,
-                    state.selfdestruct_to[159:0] == self.caller[159:0],
-                ]
-            )
+            constraints = extra_constraints + [
+                final_balance >= self.min_wei_to_receive,
+                state.selfdestruct_to[159:0] == self.caller[159:0],
+            ]
             logger.debug("Check for selfdestruct bug with constraints %s", constraints)
             if state.solver.satisfiable(extra_constraints=constraints):
                 logger.info("Found selfdestruct bug.")
@@ -202,8 +199,9 @@ class BaseAnalyzer(object):
             # TODO: Don't use a private claripy method. I wrap it with try/except
             # in case of failure, because claripy internals tend to change a lot.
             try:
-                logger.info("Found call bug. Model: %s",
-                            next(state.solver._get_models()).model)
+                logger.info(
+                    "Found call bug. Model: %s", next(state.solver._get_models()).model
+                )
             except Exception:
                 logger.info("Found call bug.")
             return True

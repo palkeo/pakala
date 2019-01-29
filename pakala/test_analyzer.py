@@ -118,7 +118,6 @@ class TestCheckState(unittest.TestCase):
         self.state.solver.add(claripy.ULT(self.env.calldata.read(0, 32), 0))
         self.assertFalse(self.check_state(self.state))
 
-
     # TODO: Fix it!
     @unittest.skip(
         "Known issue: we are sending back env.balance, "

@@ -91,7 +91,9 @@ class TestSha3Support(unittest.TestCase):
         in2 = claripy.BVS("in2", 256)
 
         self.assertFalse(s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == 0]))
-        self.assertFalse(s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(bvv(0))]))
+        self.assertFalse(
+            s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(bvv(0))])
+        )
         self.assertTrue(
             s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(Sha3(bvv(0)))])
         )

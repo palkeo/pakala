@@ -7,13 +7,12 @@ from web3 import Web3
 from pakala import memory
 
 
-
 ENV_VARS = (
     ("caller", None, None),
     ("origin", None, None),
-    ("value", None, Web3.toWei(10**6, "ether")),
+    ("value", None, Web3.toWei(10 ** 6, "ether")),
     ("address", None, None),
-    ("balance", None, Web3.toWei(10**9, "ether")),
+    ("balance", None, Web3.toWei(10 ** 9, "ether")),
     ("gas", None, None),
     ("block_timestamp", int(time.time()), int(time.time() + 86400 * 365)),
     ("block_number", 6000000, 10 ** 9),

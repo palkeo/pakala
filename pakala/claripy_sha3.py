@@ -160,7 +160,11 @@ class Sha3Mixin(object):
             sol1, = super().eval(in1, 1, extra_constraints=extra_constraints)
             extra_constraints.append(in1 == sol1)
             # lstrip() is needed if the length is 0.
-            sol1_bytes = eth_utils.conversions.to_bytes(sol1).lstrip(b'\0').rjust(in1.length // 8, b'\0')
+            sol1_bytes = (
+                eth_utils.conversions.to_bytes(sol1)
+                .lstrip(b"\0")
+                .rjust(in1.length // 8, b"\0")
+            )
             assert len(sol1_bytes) * 8 == in1.length
             extra_constraints.append(s1 == eth_utils.crypto.keccak(sol1_bytes))
             logger.debug("Added concrete constraint: %s", extra_constraints[-1])
