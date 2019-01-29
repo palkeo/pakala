@@ -253,7 +253,6 @@ bug = ra.check_states(
 )
 
 if bug:
-    print("=================== Bug found! ===================")
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         print("Composite state:")
         print(bug[0].debug_string())
@@ -263,6 +262,7 @@ if bug:
     for state in bug[1]:
         print()
         print(state.debug_string())
-    print("=================== Bug found! ===================")
+    print()
+    print("======> Bug found! Need %i transactions. <======" % len(bug[1]))
 else:
     print("Nothing to report.")
