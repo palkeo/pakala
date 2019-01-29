@@ -124,7 +124,6 @@ class BaseAnalyzer(object):
         logger.debug("Check state: %s", state)
         logger.debug("Constraints: %s", state.solver.constraints)
 
-        read_constraints = []
         extra_constraints = []  # From the environment (block number, whatever)
 
         if path is None:
@@ -133,8 +132,8 @@ class BaseAnalyzer(object):
             # So we go and fetch it.
             for key, value in state.storage_read.items():
                 constraint = state.storage_read[key] == self._read_storage(state, key)
-                read_constraints.append(constraint)
-                logger.debug("Add constraint: %s", constraint)
+                extra_constraints.append(constraint)
+                logger.debug("Add storage constraint: %s", constraint)
 
         for s in path:
             extra_constraints += s.env.extra_constraints()
@@ -154,7 +153,7 @@ class BaseAnalyzer(object):
             if state.solver.satisfiable(
                 extra_constraints=[to[159:0] == self.caller[159:0]]
             ):
-                state.solver.add(to[159:0] == self.caller[159:0])
+                extra_constraints.append(to[159:0] == self.caller[159:0])
                 total_received_by_me += value
             else:
                 total_received_by_others += value
@@ -170,7 +169,6 @@ class BaseAnalyzer(object):
         if state.selfdestruct_to is not None:
             constraints = (
                 extra_constraints
-                + read_constraints
                 + [
                     final_balance >= self.min_wei_to_receive,
                     state.selfdestruct_to[159:0] == self.caller[159:0],
@@ -189,7 +187,6 @@ class BaseAnalyzer(object):
         constraints = (
             sent_constraints
             + extra_constraints
-            + read_constraints
             + [
                 final_balance >= 0,
                 total_received_by_me > total_sent,  # I get more than what I sent?
