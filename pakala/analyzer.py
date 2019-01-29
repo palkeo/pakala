@@ -158,6 +158,8 @@ class BaseAnalyzer(object):
             else:
                 total_received_by_others += value
 
+            extra_constraints.append(value <= total_sent + path[0].env.balance)
+
         final_balance = (
             path[0].env.balance
             + total_sent

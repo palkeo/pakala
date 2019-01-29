@@ -103,6 +103,22 @@ class TestCheckState(unittest.TestCase):
         self.state.calls.append(self.get_call(self.env.balance))
         self.assertTrue(self.check_state(self.state))
 
+    def test_send_back_calldata(self):
+        self.state.calls.append(self.get_call(self.env.calldata.read(0, 32)))
+        self.state.solver.add(claripy.UGT(self.env.calldata.read(0, 32), 0))
+        self.assertTrue(self.check_state(self.state))
+
+    def test_send_back_negative_signed(self):
+        self.state.calls.append(self.get_call(self.env.calldata.read(0, 32)))
+        self.state.solver.add(claripy.SLT(self.env.calldata.read(0, 32), 0))
+        self.assertFalse(self.check_state(self.state))
+
+    def test_send_back_negative_unsigned(self):
+        self.state.calls.append(self.get_call(self.env.calldata.read(0, 32)))
+        self.state.solver.add(claripy.ULT(self.env.calldata.read(0, 32), 0))
+        self.assertFalse(self.check_state(self.state))
+
+
     # TODO: Fix it!
     @unittest.skip(
         "Known issue: we are sending back env.balance, "
