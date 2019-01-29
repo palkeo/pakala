@@ -10,7 +10,10 @@ from web3 import Web3
 
 # We can load up to this many keys from the contract storage. More than that
 # and we won't load them all, and read them lazily instead (which is less precise).
-MAX_STORAGE_KEYS = 16
+MAX_STORAGE_KEYS = 32
+
+# When we cannot list the keys, we can always try these ones:
+STORAGE_KEYS_WHEN_CANNOT_LIST = list(range(10))
 
 
 logger = logging.getLogger(__name__)
@@ -62,10 +65,11 @@ class BaseAnalyzer(object):
                 "Try to use a node that supports the parity_listStorageKeys RPC. ",
                 e.__class__.__name__,
             )
-            storage_keys = list(range(MAX_STORAGE_KEYS))
-
-        assert len(storage_keys) <= MAX_STORAGE_KEYS
-        self.actual_storage_exhaustive = len(storage_keys) < MAX_STORAGE_KEYS
+            storage_keys = STORAGE_KEYS_WHEN_CANNOT_LIST
+            self.actual_storage_exhaustive = False
+        else:
+            assert len(storage_keys) <= MAX_STORAGE_KEYS
+            self.actual_storage_exhaustive = len(storage_keys) < MAX_STORAGE_KEYS
 
         self.actual_storage = {k: self._read_storage_key(k) for k in storage_keys}
 
