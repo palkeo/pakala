@@ -22,6 +22,12 @@ class TestSha3Support(unittest.TestCase):
         s.add(Sha3(a) != Sha3(claripy.BVV(1, 256)))
         self.assertFalse(s.satisfiable())
 
+    def test_sha3_equality_different_length(self):
+        a = claripy.BVV(1, 8)
+        s = get_solver()
+        s.add(Sha3(a) == Sha3(claripy.BVV(1, 256)))
+        self.assertFalse(s.satisfiable())
+
     def test_solver_basic(self):
         s = get_solver()
         in1 = claripy.BVS("in1", 256)

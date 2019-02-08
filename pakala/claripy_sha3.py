@@ -135,16 +135,20 @@ class Sha3Mixin(object):
             if not super().satisfiable(
                 extra_constraints=extra_constraints + [s1 != s2]
             ):
-                new_extra_constraints.append(in1 == in2)
-                logger.debug("Added input constraint: %s", in1 == in2)
+                logger.debug("Adding input constraint: %s == %s", in1, in2)
+                if in1.size() == in2.size():
+                    new_extra_constraints.append(in1 == in2)
+                else:
+                    new_extra_constraints.append(False)
                 pairs_done.add((s1, s2))
                 pairs_done.add((s2, s1))
             # Do s1 needs to be != to s2 ? Then in1 needs to be != to in2
             elif not super().satisfiable(
                 extra_constraints=extra_constraints + [s1 == s2]
             ):
-                new_extra_constraints.append(in1 != in2)
-                logger.debug("Added input constraint: %s", in1 != in2)
+                logger.debug("Adding input constraint: %s != %s", in1, in2)
+                if in1.size() == in2.size():
+                    new_extra_constraints.append(in1 != in2)
                 pairs_done.add((s1, s2))
                 pairs_done.add((s2, s1))
 
