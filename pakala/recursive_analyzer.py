@@ -213,7 +213,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             self.path_queue.append((State(), [self.reference_states[-1][0]]))
 
         # Recursive exploration
-        last_path_len = 1
+        last_path_len = 0
         time_start = time.process_time()
         while self.path_queue:
             initial_composite_state, path = self.path_queue.popleft()
