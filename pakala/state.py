@@ -106,10 +106,11 @@ class State(object):
 
         # TODO: Do something cleaner! This work only with our custom solver mixin.
         self.solver.replace(r)
-        # constraints = [r(i) for i in self.solver.constraints]
-        # self.solver = utils.get_solver()
-        # for c in constraints:
-        #    self.solver.add(c)
+        # We also have to do that otherwise it causes assertion failures...
+        # Probably a problem with claripy.
+        constraints = [r(i) for i in self.solver.constraints]
+        self.solver = utils.get_solver()
+        self.solver.add(constraints)
 
     def __hash__(self):
         l = [

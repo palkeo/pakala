@@ -545,14 +545,68 @@ class TestInstructions(unittest.TestCase):
         self.run_code([PUSH1, 1, PUSH1, 32, MSTORE, MSIZE])
         self.assert_stack([64])
 
+    def test_invalid_opcode(self):
+        with self.assertRaises(utils.CodeError):
+            self.run_code([0x01, 0x02, 0x03, 0xFE, 0xFF])
+
+
+class TestOutcomes(unittest.TestCase):
+    def assertBEqual(self, a, b):
+        self.assertTrue((a == b).is_true(), msg="%s != %s" % (a, b))
+
+    def outcomes(self, code, env={}):
+        code = bytes(code)
+        self.sm = sm.SymbolicMachine(Env(code, **env))
+        self.sm.execute(timeout_sec=10)
+        return self.sm.outcomes
+
+    def test_sload_symbolic(self):
+        outcome1, outcome2 = self.outcomes(
+            [PUSH1, 42, CALLVALUE, SSTORE, PUSH1, 0, SLOAD]
+        )
+        self.assertEqual(len(outcome1.storage_read), 0)
+        self.assertEqual(len(outcome1.storage_written), 1)
+
+        self.assertTrue(utils.bvv(0) in outcome2.storage_read)
+        self.assertEqual(len(outcome2.storage_read), 1)
+
+    def test_sstore_symbolic(self):
+        outcome1, outcome2 = self.outcomes(
+            [
+                PUSH1,
+                42,
+                PUSH1,
+                0,
+                SSTORE,
+                PUSH1,
+                0,
+                SLOAD,
+                PUSH1,
+                43,
+                CALLVALUE,
+                SSTORE,
+                PUSH1,
+                0,
+                SLOAD,
+            ]
+        )
+
+        self.assertEqual(len(outcome1.storage_read), 0)
+        self.assertEqual(len(outcome1.storage_written), 1)
+        self.assertBEqual(outcome1.storage_written[utils.bvv(0)], utils.bvv(43))
+
+        self.assertEqual(len(outcome2.storage_read), 0)
+        self.assertEqual(len(outcome2.storage_written), 2)
+        self.assertBEqual(outcome2.storage_written[utils.bvv(0)], utils.bvv(42))
+        self.assertBEqual(outcome2.storage_written[outcome2.env.value], utils.bvv(43))
+
     def test_sload(self):
-        self.run_code([PUSH1, 0, SLOAD, PUSH1, 0, SLOAD])
-        self.assertTrue(self.state.stack[0] is self.state.stack[1])
-        self.run_code([PUSH1, 0, SLOAD, PUSH1, 32, SLOAD])
-        self.assertTrue(self.state.stack[0] is not self.state.stack[1])
+        outcome, = self.outcomes([PUSH1, 0, SLOAD, PUSH1, 0, SLOAD])
+        self.assertTrue(utils.bvv(0) in outcome.storage_read)
+        self.assertEqual(len(outcome.storage_read), 1)
 
     def test_sstore(self):
-        self.run_code(
+        outcome, = self.outcomes(
             [
                 PUSH1,
                 42,
@@ -572,17 +626,12 @@ class TestInstructions(unittest.TestCase):
                 SLOAD,
             ]
         )
-        self.assert_stack([42, 43])
-        self.run_code(
-            [PUSH1, 0, SLOAD, PUSH1, 32, SSTORE, PUSH1, 32, SLOAD, PUSH1, 0, SLOAD]
-        )
-        self.assertTrue(self.state.stack[0] is self.state.stack[1])
+
+        self.assertEqual(len(outcome.storage_read), 0)
+        self.assertEqual(len(outcome.storage_written), 1)
+        self.assertBEqual(outcome.storage_written[utils.bvv(0)], utils.bvv(43))
 
     # TODO: test_call, test_callcode, test_selfdestruct
-
-    def test_invalid_opcode(self):
-        with self.assertRaises(utils.CodeError):
-            self.run_code([0x01, 0x02, 0x03, 0xFE, 0xFF])
 
 
 if __name__ == "__main__":

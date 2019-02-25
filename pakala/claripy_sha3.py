@@ -188,8 +188,6 @@ class Sha3Mixin(object):
             self.constraints = [i.replace(r_from, r_to) for i in self.constraints]
         self.hashes = new_hashes
 
-        self.downsize()  # Half-assed attempt at clearing caches... TODO improve.
-
     def combine(self, others):
         combined = super().combine(others)
         combined.hashes.update(self.hashes)
