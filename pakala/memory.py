@@ -82,7 +82,7 @@ class Memory(object):
         for iaddr, ivalue in list(self._mem.items()):
             isize = ivalue.size() // 8
             raddr = iaddr - addr
-            rend = iaddr + isize - addr
+            rend = raddr + isize
             # equal
             if raddr == 0 and rend == size:
                 break
@@ -90,7 +90,8 @@ class Memory(object):
             elif raddr <= 0 and rend >= size:
                 if raddr < 0:
                     self._mem[iaddr] = _slice(ivalue, 0, -raddr)
-                self._mem[addr + size] = _slice(ivalue, -raddr + size, None)
+                if rend > size:
+                    self._mem[addr + size] = _slice(ivalue, -raddr + size, None)
             # completely inside (not strictly)
             elif raddr >= 0 and rend <= size:
                 del self._mem[iaddr]

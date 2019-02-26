@@ -147,6 +147,19 @@ class TestMemory(unittest.TestCase):
         self.assertBEqual(self.mem.read(14, 4), 0x40414243)
         self.assertBEqual(self.mem.read(18, 2), calldata.read(28, 2))
 
+    def test_overwrite_0(self):
+        self.mem.write(0, 64, claripy.BVV(1, 512))
+        self.assertBEqual(self.mem.read(0, 64), 1)
+        self.mem.write(64, 32, claripy.BVV(1, 256))
+        self.assertBEqual(self.mem.read(0, 64), 1)
+        self.mem.write(32, 32, claripy.BVV(1, 256))
+        self.assertBEqual(self.mem.read(0, 64), claripy.BVV(1, 512))
+        self.mem.write(0, 32, claripy.BVV(1, 256))
+        self.assertBEqual(
+            self.mem.read(0, 64),
+            claripy.Concat(claripy.BVV(1, 256), claripy.BVV(1, 256)),
+        )
+
 
 class TestCalldataMemory(unittest.TestCase):
     def setUp(self):
