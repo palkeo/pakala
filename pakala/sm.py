@@ -44,26 +44,12 @@ CALLDATASIZE_FUZZ = [0, 4, 32, 36, 64, 68, 100, 132, 164, 196]
 RETURNDATACOPY_SIZE_FUZZ = [0, 32]
 
 
-def not_bool(variable):
-    """Ensure a BV is not a BoolS.
-    If it is, it's converted to a BVV: 0 or 1.
-    """
-    if isinstance(variable, claripy.ast.Bool):
-        return claripy.If(variable, BVV_1, BVV_0)
-    return variable
-
-
-def make_consistent(a, b):  # pylint:disable=invalid-name
-    """Ensure a and b are not bool and not bool."""
-    if isinstance(a, claripy.ast.Bool) and not isinstance(b, claripy.ast.Bool):
-        return not_bool(a), b
-    if isinstance(b, claripy.ast.Bool) and not isinstance(a, claripy.ast.Bool):
-        return a, not_bool(b)
-    return a, b
-
-
 class MultipleSolutionsError(ValueError):
     pass
+
+
+def bool_to_bv(b):
+    return claripy.If(b, BVV_1, BVV_0)
 
 
 class SymbolicMachine:
@@ -180,7 +166,8 @@ class SymbolicMachine:
             assert self.code.pc == state.pc + 1
             assert isinstance(op, numbers.Number)
             assert all(
-                hasattr(i, "symbolic") for i in state.stack
+                isinstance(i, claripy.ast.base.BV)
+                for i in state.stack
             ), "The stack musty only contains claripy BV's"
 
             # Trivial operations first
@@ -192,20 +179,20 @@ class SymbolicMachine:
                 pass
             elif op == opcode_values.ADD:
                 s0, s1 = (
-                    not_bool(state.stack_pop()),
-                    not_bool(state.stack_pop()),
+                    state.stack_pop(),
+                    state.stack_pop(),
                 )  # pylint:disable=invalid-name
                 state.stack_push(s0 + s1)
             elif op == opcode_values.SUB:
                 s0, s1 = (
-                    not_bool(state.stack_pop()),
-                    not_bool(state.stack_pop()),
+                    state.stack_pop(),
+                    state.stack_pop(),
                 )  # pylint:disable=invalid-name
                 state.stack_push(s0 - s1)
             elif op == opcode_values.MUL:
                 s0, s1 = (
-                    not_bool(state.stack_pop()),
-                    not_bool(state.stack_pop()),
+                    state.stack_pop(),
+                    state.stack_pop(),
                 )  # pylint:disable=invalid-name
                 state.stack_push(s0 * s1)
             elif op == opcode_values.DIV:
@@ -289,28 +276,28 @@ class SymbolicMachine:
                     state.stack_push(claripy.BVV(base ** exponent, 256))
             elif op == opcode_values.LT:
                 s0, s1 = (
-                    not_bool(state.stack_pop()),
-                    not_bool(state.stack_pop()),
+                    state.stack_pop(),
+                    state.stack_pop(),
                 )  # pylint:disable=invalid-name
-                state.stack_push(claripy.ULT(s0, s1))
+                state.stack_push(bool_to_bv(claripy.ULT(s0, s1)))
             elif op == opcode_values.GT:
                 s0, s1 = (
-                    not_bool(state.stack_pop()),
-                    not_bool(state.stack_pop()),
+                    state.stack_pop(),
+                    state.stack_pop(),
                 )  # pylint:disable=invalid-name
-                state.stack_push(claripy.UGT(s0, s1))
+                state.stack_push(bool_to_bv(claripy.UGT(s0, s1)))
             elif op == opcode_values.SLT:
                 s0, s1 = (
-                    not_bool(state.stack_pop()),
-                    not_bool(state.stack_pop()),
+                    state.stack_pop(),
+                    state.stack_pop(),
                 )  # pylint:disable=invalid-name
-                state.stack_push(claripy.SLT(s0, s1))
+                state.stack_push(bool_to_bv(claripy.SLT(s0, s1)))
             elif op == opcode_values.SGT:
                 s0, s1 = (
-                    not_bool(state.stack_pop()),
-                    not_bool(state.stack_pop()),
+                    state.stack_pop(),
+                    state.stack_pop(),
                 )  # pylint:disable=invalid-name
-                state.stack_push(claripy.SGT(s0, s1))
+                state.stack_push(bool_to_bv(claripy.SGT(s0, s1)))
             elif op == opcode_values.SIGNEXTEND:
                 s0, s1 = (
                     state.stack_pop(),
@@ -331,36 +318,17 @@ class SymbolicMachine:
                     state.stack_push(s1)
             elif op == opcode_values.EQ:
                 s0, s1 = state.stack_pop(), state.stack_pop()
-                if isinstance(s0, claripy.ast.Bool) and isinstance(
-                    s1, claripy.ast.Bool
-                ):
-                    state.stack_push(s0 == s1)
-                else:
-                    state.stack_push(not_bool(s0) == not_bool(s1))
+                state.stack_push(bool_to_bv(s0 == s1))
             elif op == opcode_values.ISZERO:
-                condition = state.stack_pop()
-                if isinstance(condition, claripy.ast.Bool):
-                    state.stack_push(claripy.Not(condition))
-                else:
-                    state.stack_push(condition == BVV_0)
+                state.stack_push(bool_to_bv(state.stack_pop() == BVV_0))
             elif op == opcode_values.AND:
-                s0, s1 = make_consistent(state.stack_pop(), state.stack_pop())
-                if isinstance(s0, claripy.ast.Bool) and isinstance(
-                    s1, claripy.ast.Bool
-                ):
-                    state.stack_push(s0 and s1)
-                else:
-                    state.stack_push(s0 & s1)
+                s0, s1 = state.stack_pop(), state.stack_pop()
+                state.stack_push(s0 & s1)
             elif op == opcode_values.OR:
-                s0, s1 = make_consistent(state.stack_pop(), state.stack_pop())
-                if isinstance(s0, claripy.ast.Bool) and isinstance(
-                    s1, claripy.ast.Bool
-                ):
-                    state.stack_push(s0 or s1)
-                else:
-                    state.stack_push(s0 | s1)
+                s0, s1 = state.stack_pop(), state.stack_pop()
+                state.stack_push(s0 | s1)
             elif op == opcode_values.XOR:
-                s0, s1 = make_consistent(state.stack_pop(), state.stack_pop())
+                s0, s1 = state.stack_pop(), state.stack_pop()
                 state.stack_push(s0 ^ s1)
             elif op == opcode_values.NOT:
                 state.stack_push(~state.stack_pop())
@@ -417,12 +385,8 @@ class SymbolicMachine:
             elif op == opcode_values.JUMPI:
                 addr, condition = solution(state.stack_pop()), state.stack_pop()
                 state_false = state.copy()
-                if isinstance(condition, claripy.ast.Bool):
-                    state.solver.add(condition)
-                    state_false.solver.add(claripy.Not(condition))
-                else:
-                    state.solver.add(condition != 0)
-                    state_false.solver.add(condition == 0)
+                state.solver.add(condition != BVV_0)
+                state_false.solver.add(condition == BVV_0)
                 state_false.pc += 1
                 self.add_branch(state_false)
                 state.pc = addr
@@ -534,10 +498,10 @@ class SymbolicMachine:
                 index = solution(state.stack_pop())
                 state.stack_push(state.memory.read(index, 32))
             elif op == opcode_values.MSTORE:
-                index, value = solution(state.stack_pop()), not_bool(state.stack_pop())
+                index, value = solution(state.stack_pop()), state.stack_pop()
                 state.memory.write(index, 32, value)
             elif op == opcode_values.MSTORE8:
-                index, value = solution(state.stack_pop()), not_bool(state.stack_pop())
+                index, value = solution(state.stack_pop()), state.stack_pop()
                 state.memory.write(index, 1, value[7:0])
             elif op == opcode_values.MSIZE:
                 state.stack_push(bvv(state.memory.size()))
@@ -585,7 +549,7 @@ class SymbolicMachine:
                 # First possibility: the call fails
                 # (always possible with a call stack big enough)
                 state_fail = state.copy()
-                state_fail.stack_push(claripy.BoolV(False))
+                state_fail.stack_push(BVV_0)
                 self.add_branch(state_fail)
 
                 # Second possibility: success.
@@ -607,7 +571,7 @@ class SymbolicMachine:
                         claripy.BVS("CALL_RETURN[%s]" % to_, memoutsz * 8),
                     )
 
-                state.stack_push(claripy.BoolV(True))
+                state.stack_push(BVV_1)
                 self.add_branch(state)
                 return False
 
@@ -617,7 +581,7 @@ class SymbolicMachine:
                 # First possibility: the call fails
                 # (always possible with a call stack big enough)
                 state_fail = state.copy()
-                state_fail.stack_push(claripy.BoolV(False))
+                state_fail.stack_push(BVV_0)
                 self.add_branch(state_fail)
 
                 # Second possibility: success.
@@ -639,7 +603,7 @@ class SymbolicMachine:
                         claripy.BVS("DELEGATECALL_RETURN[%s]" % to_, memoutsz * 8),
                     )
 
-                state.stack_push(claripy.BoolV(True))
+                state.stack_push(BVV_1)
                 self.add_branch(state)
                 return False
 
