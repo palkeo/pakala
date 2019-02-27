@@ -144,7 +144,7 @@ class SymbolicMachine:
             solutions = state.solver.eval(variable, 2)
             if len(solutions) > 1:
                 raise MultipleSolutionsError(
-                    "Ambiguous solution for %s (%#x)" % (variable, self.code[state.pc])
+                    "Multiple solutions for %s (%#x)" % (variable, self.code[state.pc])
                 )
             solution = solutions[0]
             return solution if isinstance(solution, numbers.Number) else solution.value
