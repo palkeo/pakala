@@ -22,6 +22,7 @@ import logging
 import math
 import numbers
 import time
+import traceback
 
 import claripy
 
@@ -648,6 +649,7 @@ class SymbolicMachine:
                 ZeroDivisionError,
             ) as error:
                 logger.debug("Interpreter error: %s", error)
+                logger.debug(traceback.format_exc())
                 self.interpreter_errors[repr(error)] += 1
                 if isinstance(error, utils.InterpreterError):
                     self.add_partial_outcome(error.state)
