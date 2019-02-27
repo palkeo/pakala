@@ -40,7 +40,8 @@ BVV_0 = bvv(0)
 BVV_1 = bvv(1)
 
 # interesting values aligned to classic parameters.
-CALLDATASIZE_FUZZ = [4, 32, 36, 64, 68, 100, 132, 164, 196]
+CALLDATASIZE_FUZZ = [0, 4, 32, 36, 64, 68, 100, 132, 164, 196]
+RETURNDATACOPY_SIZE_FUZZ = [0, 32]
 
 
 def not_bool(variable):
@@ -654,8 +655,7 @@ class SymbolicMachine:
                 try:
                     size = solution(size)
                 except MultipleSolutionsError:
-                    # TODO: Improve fuzzing. Now we only try for a size of 0.
-                    self.add_for_fuzzing(old_state, size, [0])
+                    self.add_for_fuzzing(old_state, size, RETURNDATACOPY_SIZE_FUZZ)
                     return False
 
                 state.memory.write(
