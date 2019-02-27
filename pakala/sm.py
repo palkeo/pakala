@@ -507,6 +507,27 @@ class SymbolicMachine:
                 else:
                     # TODO: Improve that... It's clearly not constraining enough.
                     state.stack_push(claripy.BVS("EXTCODESIZE[%s]" % addr, 256))
+
+            elif op == opcode_values.EXTCODECOPY:
+                old_state = state.copy()
+                addr = state.stack_pop()
+                mem_start = solution(state.stack_pop())
+                code_start = solution(state.stack_pop())
+
+                size = state.stack_pop()
+                try:
+                    size = solution(size)
+                except MultipleSolutionsError:
+                    # TODO: Fuzz.
+                    # self.add_for_fuzzing(old_state, size, [])
+                    # return False
+                    raise
+                state.memory.write(
+                    mem_start,
+                    size,
+                    claripy.BVS("EXTCODE[%s from %s]" % (addr, code_start), size * 8),
+                )
+
             elif op == opcode_values.CODECOPY:
                 mem_start, code_start, size = [
                     solution(state.stack_pop()) for _ in range(3)
@@ -587,14 +608,72 @@ class SymbolicMachine:
                     state.stack_pop() for _ in range(7)
                 )
 
-                if solution(memoutsz) != 0:
-                    raise utils.InterpreterError(state, "CALL seems to return data")
-                if solution(meminsz) != 0:
-                    raise utils.InterpreterError(state, "CALL seems to take data")
+                # TODO: If the call is to a specific contract we don't control,
+                # don't assume it could return anything, or even be successful.
+                memoutsz = solution(memoutsz)
+                if memoutsz != 0:
+                    memoutstart = solution(memoutstart)
+                    state.memory.write(
+                        memoutstart,
+                        memoutsz,
+                        claripy.BVS("CALL_RETURN[%s]" % to_, memoutsz * 8),
+                    )
 
                 state.stack_push(claripy.BoolV(True))
                 self.add_branch(state)
                 return False
+
+            elif op == opcode_values.DELEGATECALL:
+                state.pc += 1
+
+                # First possibility: the call fails
+                # (always possible with a call stack big enough)
+                state_fail = state.copy()
+                state_fail.stack_push(claripy.BoolV(False))
+                self.add_branch(state_fail)
+
+                # Second possibility: success.
+                state.calls.append(state.stack[-6:])
+
+                # pylint:disable=unused-variable
+                gas, to_, meminstart, meminsz, memoutstart, memoutsz = (
+                    state.stack_pop() for _ in range(6)
+                )
+
+                # TODO: If the call is to a specific contract we don't control,
+                # don't assume it could return anything, or even be successful.
+                memoutsz = solution(memoutsz)
+                if memoutsz != 0:
+                    memoutstart = solution(memoutstart)
+                    state.memory.write(
+                        memoutstart,
+                        memoutsz,
+                        claripy.BVS("DELEGATECALL_RETURN[%s]" % to_, memoutsz * 8),
+                    )
+
+                state.stack_push(claripy.BoolV(True))
+                self.add_branch(state)
+                return False
+
+            elif op == opcode_values.RETURNDATASIZE:
+                state.stack_push(claripy.BVS("RETURNDATASIZE", 256))
+
+            elif op == opcode_values.RETURNDATACOPY:
+                old_state = state.copy()
+                mem_start_position = solution(state.stack_pop())
+                returndata_start_position = solution(state.stack_pop())
+
+                size = state.stack_pop()
+                try:
+                    size = solution(size)
+                except MultipleSolutionsError:
+                    # TODO: Improve fuzzing. Now we only try for a size of 0.
+                    self.add_for_fuzzing(old_state, size, [0])
+                    return False
+
+                state.memory.write(
+                    mem_start_position, size, claripy.BVS("RETURNDATACOPY", size * 8)
+                )
 
             elif op == opcode_values.SELFDESTRUCT:
                 state.selfdestruct_to = state.stack[-1]
@@ -602,6 +681,7 @@ class SymbolicMachine:
 
             elif op == opcode_values.REVERT:
                 return False
+
             else:
                 raise utils.InterpreterError(state, "Unknown opcode %#x" % op)
 
@@ -714,7 +794,11 @@ class SymbolicMachine:
             if not self.code.is_valid_opcode(pc):
                 continue
             if instruction == opcode_values.JUMPDEST:
-                logger.debug("  {:04x}: {}".format(pc, 'covered' if self.coverage[pc] else 'not covered'))
+                logger.debug(
+                    "  {:04x}: {}".format(
+                        pc, "covered" if self.coverage[pc] else "not covered"
+                    )
+                )
             total_lines += 1
             covered_lines += bool(self.coverage[pc])
         return covered_lines / float(total_lines or 1)
