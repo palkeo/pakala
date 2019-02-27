@@ -16,6 +16,10 @@ from pakala import utils
 from eth.vm.opcode_values import *
 
 
+BVV_0 = utils.bvv(0)
+BVV_1 = utils.bvv(1)
+
+
 class TestSymbolicMachine(unittest.TestCase):
     """Basic tests for the members of the symbolic machine."""
 
@@ -182,55 +186,55 @@ class TestInstructions(unittest.TestCase):
 
     def test_lt(self):
         self.run_code([PUSH1, 7, PUSH1, 6, LT])
-        self.assert_stack([True])
+        self.assert_stack([BVV_1])
         self.run_code([PUSH1, 7, PUSH1, 7, LT])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
         self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, LT])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
         self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, LT])
-        self.assert_stack([True])
+        self.assert_stack([BVV_1])
 
     def test_gt(self):
         self.run_code([PUSH1, 7, PUSH1, 6, GT])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
         self.run_code([PUSH1, 7, PUSH1, 7, GT])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
         self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, GT])
-        self.assert_stack([True])
+        self.assert_stack([BVV_1])
         self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, GT])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
 
     def test_slt(self):
         self.run_code([PUSH1, 7, PUSH1, 6, SLT])
-        self.assert_stack([True])
+        self.assert_stack([BVV_1])
         self.run_code([PUSH1, 7, PUSH1, 7, SLT])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
         self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, SLT])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
         self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, SLT])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
 
     def test_sgt(self):
         self.run_code([PUSH1, 7, PUSH1, 6, SGT])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
         self.run_code([PUSH1, 7, PUSH1, 7, SGT])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
         self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, SGT])
-        self.assert_stack([True])
+        self.assert_stack([BVV_1])
         self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, SGT])
-        self.assert_stack([True])
+        self.assert_stack([BVV_1])
 
     def test_eq(self):
         self.run_code([PUSH1, 1, PUSH1, 1, EQ])
-        self.assert_stack([True])
+        self.assert_stack([BVV_1])
         self.run_code([PUSH1, 1, PUSH1, 2, EQ])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
 
     def test_iszero(self):
         self.run_code([PUSH1, 1, ISZERO])
-        self.assert_stack([False])
+        self.assert_stack([BVV_0])
         self.run_code([PUSH1, 1, PUSH32] + 32 * [0xFF] + [ADD, ISZERO])
-        self.assert_stack([True])
+        self.assert_stack([BVV_1])
 
     def test_and(self):
         self.run_code([PUSH1, 3, PUSH1, 2, AND])
