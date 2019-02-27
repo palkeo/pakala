@@ -86,10 +86,7 @@ class SymbolicMachine:
         self.add_branch(State(env))
 
     def add_branch(self, state):
-        """Add a state corresponding to a branch to be executed.
-        We look at how many times the branch was executed, that's the score.
-        We will take the branches with the smallest score first.
-        """
+        """Add a state corresponding to a branch to be executed."""
         if not state.solver.satisfiable():
             logger.debug("Avoided adding unsatisfiable state.")
             return
@@ -104,23 +101,14 @@ class SymbolicMachine:
         state.solver.downsize()
         state.solver.simplify()
 
-        # If it's a unknown code, let's set the score to 0, otherwise use the
-        # score from the state.
-        new_code = state.pc >= len(self.coverage) or not self.coverage[state.pc]
-        if new_code:
-            state.score = 0
-
-        # TODO: Run comprehensive tests with that formula instead.
-        # state.score = 0 if state.pc >= len(self.coverage) else self.coverage[state.pc]
-
         logger.debug(
-            "Adding branch to %i with score %i " "(visited %i times)",
+            "Adding branch to %i with depth %i (visited %i times)",
             state.pc,
-            state.score,
+            state.depth,
             self.coverage[state.pc] if state.pc < len(self.coverage) else 0,
         )
 
-        heapq.heappush(self.branch_queue, (state.score, state))
+        heapq.heappush(self.branch_queue, (state.depth, state))
         self.states_seen.add(hash(state))
 
     def add_for_fuzzing(self, state, variable, tries):
@@ -156,7 +144,7 @@ class SymbolicMachine:
         logger.debug("Fuzzing will try %s in %s.", variable, to_try)
         for value in to_try:
             new_state = state.copy()
-            new_state.score += 5  # Lower the priority of what we got by fuzzing.
+            new_state.depth += 2  # Lower the priority of what we got by fuzzing.
             new_state.solver.add(variable == value)
             self.add_branch(new_state)
 
@@ -174,7 +162,6 @@ class SymbolicMachine:
             solution = solutions[0]
             return solution if isinstance(solution, numbers.Number) else solution.value
 
-        state.score += 1
         self.code.pc = state.pc
 
         while True:
@@ -718,9 +705,10 @@ class SymbolicMachine:
                 self.interpreter_errors["execute timeout"] += 1
                 break
 
-            score, state = heapq.heappop(self.branch_queue)
+            depth, state = heapq.heappop(self.branch_queue)
+            state.depth += 1
 
-            logger.debug("Executing branch at %i with score %i.", state.pc, score)
+            logger.debug("Executing branch at %i with depth %i.", state.pc, depth)
             try:
                 success = self.exec_branch(state)
             except (utils.CodeError, claripy.errors.UnsatError) as error:
@@ -745,7 +733,7 @@ class SymbolicMachine:
         # In case of timeouts, we still have unfinished branches in the queue!
         # Add them as partial outcomes.
         while self.branch_queue:
-            score, state = heapq.heappop(self.branch_queue)
+            depth, state = heapq.heappop(self.branch_queue)
             self.add_partial_outcome(state)
 
         logger.info(

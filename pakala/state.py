@@ -18,8 +18,9 @@ class State(object):
         self.pc = 0  # pylint:disable=invalid-name
         self.stack = []
 
-        # TODO: explain
-        self.score = 0
+        # The "depth" we needed to reach that state. Basically how many branches
+        # we executed to reach it (can be increased more if we got there by fuzzing).
+        self.depth = 0
 
         self.memory = memory.Memory()
 
@@ -163,7 +164,7 @@ class State(object):
         new_state.solver = self.solver.branch()
         new_state.calls = self.calls[:]
         new_state.selfdestruct_to = self.selfdestruct_to
-        new_state.score = self.score
+        new_state.depth = self.depth
         return new_state
 
     # TODO(palkeo): Get rid of that. Needed because of heapq in sm.py...
