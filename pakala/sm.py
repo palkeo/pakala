@@ -165,7 +165,7 @@ class SymbolicMachine:
             solutions = state.solver.eval(variable, 2)
             if len(solutions) > 1:
                 raise ValueError(
-                    "Ambiguous solution for %s (%s)" % (variable, self.code[state.pc])
+                    "Ambiguous solution for %s (%#x)" % (variable, self.code[state.pc])
                 )
             solution = solutions[0]
             return solution if isinstance(solution, numbers.Number) else solution.value
@@ -183,7 +183,7 @@ class SymbolicMachine:
             logger.debug("NEW STEP")
             logger.debug("Memory: %s", state.memory)
             logger.debug("Stack: %s", state.stack)
-            logger.debug("PC: %i, %s", state.pc, op)
+            logger.debug("PC: %i, %#x", state.pc, op)
 
             assert self.code.pc == state.pc + 1
             assert isinstance(op, numbers.Number)
@@ -599,7 +599,7 @@ class SymbolicMachine:
             elif op == opcode_values.REVERT:
                 return False
             else:
-                raise utils.InterpreterError(state, "Unknown opcode %s" % op)
+                raise utils.InterpreterError(state, "Unknown opcode %#x" % op)
 
             state.pc += 1
 
