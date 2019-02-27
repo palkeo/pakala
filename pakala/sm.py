@@ -698,15 +698,17 @@ class SymbolicMachine:
     def get_coverage(self):
         """Return the ratio of instructions that were executed by the total
         number of instructions."""
+        logger.debug("Coverage analysis:")
         total_lines = 0
         covered_lines = 0
+        self.code.pc = 0
         for pc, instruction in enumerate(self.code):  # pylint:disable=invalid-name
             if pc == len(self.code):
                 break
-            if instruction == opcode_values.JUMPDEST or not self.code.is_valid_opcode(
-                pc
-            ):
+            if not self.code.is_valid_opcode(pc):
                 continue
+            if instruction == opcode_values.JUMPDEST:
+                logger.debug("  {:04x}: {}".format(pc, 'covered' if self.coverage[pc] else 'not covered'))
             total_lines += 1
             covered_lines += bool(self.coverage[pc])
         return covered_lines / float(total_lines or 1)
