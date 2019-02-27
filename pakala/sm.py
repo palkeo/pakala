@@ -61,6 +61,10 @@ def make_consistent(a, b):  # pylint:disable=invalid-name
     return a, b
 
 
+class MultipleSolutionsError(ValueError):
+    pass
+
+
 class SymbolicMachine:
     """Class to represent a state of a EVM program, and execute it symbolically.
     """
@@ -164,7 +168,7 @@ class SymbolicMachine:
             """Returns the solution. There must be one or we fail."""
             solutions = state.solver.eval(variable, 2)
             if len(solutions) > 1:
-                raise ValueError(
+                raise MultipleSolutionsError(
                     "Ambiguous solution for %s (%#x)" % (variable, self.code[state.pc])
                 )
             solution = solutions[0]
@@ -227,7 +231,7 @@ class SymbolicMachine:
                 )  # pylint:disable=invalid-name
                 try:
                     s1 = solution(s1)  # pylint:disable=invalid-name
-                except ValueError:
+                except MultipleSolutionsError:
                     state.stack_push(claripy.If(s1 == 0, BVV_0, s0 / s1))
                 else:
                     if s1 == 0:
@@ -246,7 +250,7 @@ class SymbolicMachine:
                 )  # pylint:disable=invalid-name
                 try:
                     s1 = solution(s1)
-                except ValueError:
+                except MultipleSolutionsError:
                     state.stack_push(claripy.If(s1 == 0, BVV_0, s0.SDiv(s1)))
                 else:
                     state.stack_push(BVV_0 if s1 == 0 else s0.SDiv(s1))
@@ -257,7 +261,7 @@ class SymbolicMachine:
                 )  # pylint:disable=invalid-name
                 try:
                     s1 = solution(s1)
-                except ValueError:
+                except MultipleSolutionsError:
                     state.stack_push(claripy.If(s1 == 0, BVV_0, s0 % s1))
                 else:
                     state.stack_push(BVV_0 if s1 == 0 else s0 % s1)
@@ -268,7 +272,7 @@ class SymbolicMachine:
                 )  # pylint:disable=invalid-name
                 try:
                     s1 = solution(s1)
-                except ValueError:
+                except MultipleSolutionsError:
                     state.stack_push(claripy.If(s1 == 0, BVV_0, s0.SMod(s1)))
                 else:
                     state.stack_push(BVV_0 if s1 == 0 else s0.SMod(s1))
@@ -276,7 +280,7 @@ class SymbolicMachine:
                 s0, s1, s2 = state.stack_pop(), state.stack_pop(), state.stack_pop()
                 try:
                     s2 = solution(s2)
-                except ValueError:
+                except MultipleSolutionsError:
                     state.stack_push(claripy.If(s2 == 0, BVV_0, (s0 + s1) % s2))
                 else:
                     state.stack_push(BVV_0 if s2 == 0 else (s0 + s1) % s2)
@@ -284,7 +288,7 @@ class SymbolicMachine:
                 s0, s1, s2 = state.stack_pop(), state.stack_pop(), state.stack_pop()
                 try:
                     s2 = solution(s2)
-                except ValueError:
+                except MultipleSolutionsError:
                     state.stack_push(claripy.If(s2 == 0, BVV_0, (s0 * s1) % s2))
                 else:
                     state.stack_push(BVV_0 if s2 == 0 else (s0 * s1) % s2)
@@ -471,7 +475,7 @@ class SymbolicMachine:
                 indexes = state.stack_pop()
                 try:
                     index = solution(indexes)
-                except ValueError:  # Multiple solutions, let's fuzz.
+                except MultipleSolutionsError:
                     state.stack_push(indexes)  # restore the stack
                     self.add_for_fuzzing(state, indexes, CALLDATASIZE_FUZZ)
                     return False
@@ -489,7 +493,7 @@ class SymbolicMachine:
                 mstart, dstart = solution(mstart), solution(dstart)
                 try:
                     size = solution(size)
-                except ValueError:
+                except MultipleSolutionsError:
                     self.add_for_fuzzing(old_state, size, CALLDATASIZE_FUZZ)
                     return False
                 state.memory.copy_from(state.env.calldata, mstart, dstart, size)
@@ -645,7 +649,7 @@ class SymbolicMachine:
             except (
                 utils.InterpreterError,
                 claripy.errors.ClaripyError,
-                ValueError,
+                MultipleSolutionsError,
                 ZeroDivisionError,
             ) as error:
                 logger.debug("Interpreter error: %s", error)
