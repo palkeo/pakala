@@ -104,14 +104,7 @@ class State(object):
         self.selfdestruct_to = (
             None if self.selfdestruct_to is None else r(self.selfdestruct_to)
         )
-
-        # TODO: Do something cleaner! This work only with our custom solver mixin.
         self.solver.replace(r)
-        # We also have to do that otherwise it causes assertion failures...
-        # Probably a problem with claripy.
-        constraints = [r(i) for i in self.solver.constraints]
-        self.solver = utils.get_solver()
-        self.solver.add(constraints)
 
     def __hash__(self):
         l = [

@@ -1,9 +1,6 @@
 import logging
 import itertools
 
-from claripy import frontend_mixins
-from claripy import frontends
-from claripy import backends
 from claripy.ast import bv
 import claripy
 import eth_utils
@@ -56,39 +53,37 @@ def _no_sha3_symbols(constraints):
     return all(_no_sha3_symbol(ast) for ast in constraints)
 
 
-class Sha3Mixin(object):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.hashes = {}  # Mapping hash input to the symbol
+def get_claripy_solver():
+    # TODO: What about SolverComposite? Tried, and seems slower.
+    return claripy.Solver()
 
-    def _copy(self, c):
-        super()._copy(c)
-        c.hashes = self.hashes.copy()
 
-    def _blank_copy(self, c):
-        super()._blank_copy(c)
-        c.hashes = {}
+class Solver:
+    __slots__ = ["solver", "hashes"]
+
+    def __init__(self, claripy_solver=None, hashes=None):
+        self.solver = claripy_solver or get_claripy_solver()
+        self.hashes = hashes or {}  # Mapping hash input to the symbol
+
+    def branch(self):
+        return Solver(claripy_solver=self.solver.branch(), hashes=self.hashes.copy())
 
     def add(self, constraints, **kwargs):
         if isinstance(constraints, claripy.ast.base.Base):
             constraints = [constraints]
-        # TODO: Put the assertion here. Problem is that this is called from
-        # inside claripy as well.
-        # assert _no_sha3_symbols(constraints)
+        assert _no_sha3_symbols(constraints)
         constraints = [_symbolize_hashes(c, self.hashes) for c in constraints]
-        return super().add(constraints, **kwargs)
+        return self.solver.add(constraints, **kwargs)
 
     def satisfiable(self, extra_constraints=(), **kwargs):
-        # TODO: Put the assertion here. Problem is that this is called from
-        # inside claripy as well.
-        # assert _no_sha3_symbols(extra_constraints)
+        assert _no_sha3_symbols(extra_constraints)
         try:
             extra_constraints = self._hash_constraints(
                 extra_constraints, hashes=self.hashes.copy()
             )
         except claripy.errors.UnsatError:
             return False
-        return super().satisfiable(extra_constraints=extra_constraints)
+        return self.solver.satisfiable(extra_constraints=extra_constraints)
 
     def eval(self, e, n, extra_constraints=(), **kwargs):
         assert _no_sha3_symbol(e)
@@ -96,7 +91,7 @@ class Sha3Mixin(object):
         hashes = self.hashes.copy()
         e = _symbolize_hashes(e, hashes)
         extra_constraints = self._hash_constraints(extra_constraints, hashes=hashes)
-        return super().eval(e, n, extra_constraints=extra_constraints)
+        return self.solver.eval(e, n, extra_constraints=extra_constraints)
 
     def batch_eval(self, e, n, extra_constraints=(), **kwargs):
         raise NotImplementedError()
@@ -107,7 +102,7 @@ class Sha3Mixin(object):
         hashes = self.hashes.copy()
         e = _symbolize_hashes(e, hashes)
         extra_constraints = self._hash_constraints(extra_constraints, hashes=hashes)
-        return super().max(e, extra_constraints=extra_constraints)
+        return self.solver.max(e, extra_constraints=extra_constraints)
 
     def min(self, e, extra_constraints=(), **kwargs):
         assert _no_sha3_symbol(e)
@@ -115,13 +110,23 @@ class Sha3Mixin(object):
         hashes = self.hashes.copy()
         e = _symbolize_hashes(e, hashes)
         extra_constraints = self._hash_constraints(extra_constraints, hashes=hashes)
-        return super().min(e, extra_constraints=extra_constraints)
+        return self.solver.min(e, extra_constraints=extra_constraints)
+
+    def solution(self, e, v, extra_constraints=(), **kwargs):
+        assert _no_sha3_symbol(e)
+        assert _no_sha3_symbols(extra_constraints)
+        hashes = self.hashes.copy()
+        e = _symbolize_hashes(e, hashes)
+        extra_constraints = self._hash_constraints(extra_constraints, hashes=hashes)
+        return self.solver.solution(e, v, extra_constraints=extra_constraints)
 
     def _hash_constraints(self, extra_constraints, hashes, pairs_done=None):
         extra_constraints = [_symbolize_hashes(c, hashes) for c in extra_constraints]
 
         # Fast-path if no hashes, or if not satisfiable.
-        if not hashes or not super().satisfiable(extra_constraints=extra_constraints):
+        if not hashes or not self.solver.satisfiable(
+            extra_constraints=extra_constraints
+        ):
             return tuple(extra_constraints)
 
         if pairs_done is None:
@@ -132,7 +137,7 @@ class Sha3Mixin(object):
             if (s1, s2) in pairs_done:
                 continue
             # Do s1 needs to be equal to s2 ? Then in1 needs to be equal to in2
-            if not super().satisfiable(
+            if not self.solver.satisfiable(
                 extra_constraints=extra_constraints + [s1 != s2]
             ):
                 logger.debug("Adding input constraint: %s == %s", in1, in2)
@@ -143,7 +148,7 @@ class Sha3Mixin(object):
                 pairs_done.add((s1, s2))
                 pairs_done.add((s2, s1))
             # Do s1 needs to be != to s2 ? Then in1 needs to be != to in2
-            elif not super().satisfiable(
+            elif not self.solver.satisfiable(
                 extra_constraints=extra_constraints + [s1 == s2]
             ):
                 logger.debug("Adding input constraint: %s != %s", in1, in2)
@@ -157,11 +162,11 @@ class Sha3Mixin(object):
                 extra_constraints + new_extra_constraints, hashes, pairs_done
             )
 
-        assert super().satisfiable(extra_constraints=extra_constraints)
+        assert self.solver.satisfiable(extra_constraints=extra_constraints)
 
         for in1, s1 in hashes.items():
             # Next line can raise UnsatError. Handled in the caller if needed.
-            sol1, = super().eval(in1, 1, extra_constraints=extra_constraints)
+            sol1, = self.solver.eval(in1, 1, extra_constraints=extra_constraints)
             extra_constraints.append(in1 == sol1)
             # lstrip() is needed if the length is 0.
             sol1_bytes = (
@@ -177,7 +182,7 @@ class Sha3Mixin(object):
 
     def replace(self, r):
         # First replacement: apply r() everywhere.
-        self.constraints = [r(i) for i in self.constraints]
+        new_constraints = [r(i) for i in self.solver.constraints]
         self.hashes = {r(k): r(v) for k, v in self.hashes.items()}
         # Second one: change the hash symbols as well.
         # Also needed in case we re-import constraints before the replacement:
@@ -185,47 +190,45 @@ class Sha3Mixin(object):
         new_hashes = {k: claripy.BVS("SHA3", 256) for k, v in self.hashes.items()}
         for k in self.hashes:
             r_from, r_to = self.hashes[k], new_hashes[k]
-            self.constraints = [i.replace(r_from, r_to) for i in self.constraints]
+            new_constraints = [i.replace(r_from, r_to) for i in new_constraints]
         self.hashes = new_hashes
 
+        # We need to rebuild the solver because we cannot just modify the constraints.
+        self.solver = get_claripy_solver()
+        self.solver.add(new_constraints)
+
     def combine(self, others):
-        combined = super().combine(others)
-        combined.hashes.update(self.hashes)
+        other_claripy_solvers = [i.solver for i in others]
+        combined = Solver(
+            claripy_solver=self.solver.combine(other_claripy_solvers),
+            hashes=self.hashes,
+        )
 
         for other in others:
             for k, v in self.hashes.items():
-                # Make sure the symbols are distinct
+                # Make sure the hash symbols are distinct
                 assert all(v is not v2 for v2 in other.hashes.values())
-                # TODO: Support identical inputs.
-                # We just have to make the symbols identical.
-                assert all(k is not k2 for k2 in other.hashes.keys())
+                # TODO: If some hash input are equal, we should merge the hash
+                # symols here, it would be more efficient.
             combined.hashes.update(other.hashes)
 
         return combined
 
+    def downsize(self):
+        return self.solver.downsize()
+
+    def simplify(self):
+        return self.solver.simplify()
+
     def __repr__(self):
         return "ClaripySha3(constraints=%s, hashes=%s)" % (
-            self.constraints,
+            self.solver.constraints,
             self.hashes,
         )
 
     def as_dict(self):
-        return {"constraints": self.constraints, "hashes": self.hashes}
+        return {"constraints": self.solver.constraints, "hashes": self.hashes}
 
-
-class Solver(
-    Sha3Mixin,
-    frontend_mixins.ConstraintFixerMixin,
-    frontend_mixins.ConcreteHandlerMixin,
-    frontend_mixins.EagerResolutionMixin,
-    frontend_mixins.ConstraintFilterMixin,
-    frontend_mixins.ConstraintDeduplicatorMixin,
-    frontend_mixins.SimplifySkipperMixin,
-    frontend_mixins.SatCacheMixin,
-    frontend_mixins.ModelCacheMixin,
-    frontend_mixins.ConstraintExpansionMixin,
-    frontend_mixins.SimplifyHelperMixin,
-    frontends.FullFrontend,
-):
-    def __init__(self, backend=backends.z3, **kwargs):
-        super().__init__(backend, **kwargs)
+    @property
+    def constraints(self):
+        return self.solver.constraints

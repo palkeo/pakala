@@ -60,7 +60,8 @@ class TestWithNewEnv(unittest.TestCase):
                 state.storage_read[utils.bvv(2)], new_state.storage_read[utils.bvv(2)]
             )
 
-            self.assertEqual(new_state.solver.eval(state.calls[0][1], 2), (42,))
+            self.assertNotEqual(new_state.solver.eval(state.calls[0][1], 2), (42,))
+            self.assertEqual(new_state.solver.eval(new_state.calls[0][1], 2), (42,))
 
 
 class TestCheckStates(unittest.TestCase):

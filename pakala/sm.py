@@ -166,8 +166,7 @@ class SymbolicMachine:
             assert self.code.pc == state.pc + 1
             assert isinstance(op, numbers.Number)
             assert all(
-                isinstance(i, claripy.ast.base.BV)
-                for i in state.stack
+                isinstance(i, claripy.ast.base.BV) for i in state.stack
             ), "The stack musty only contains claripy BV's"
 
             # Trivial operations first
