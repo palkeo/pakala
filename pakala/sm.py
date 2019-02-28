@@ -42,6 +42,7 @@ BVV_1 = bvv(1)
 # interesting values aligned to classic parameters.
 CALLDATASIZE_FUZZ = [0, 4, 32, 36, 64, 68, 100, 132, 164, 196]
 RETURNDATACOPY_SIZE_FUZZ = [0, 32]
+EXP_EXPONENT_FUZZ = [min, max]
 
 
 class MultipleSolutionsError(ValueError):
@@ -131,7 +132,7 @@ class SymbolicMachine:
         logger.debug("Fuzzing will try %s in %s.", variable, to_try)
         for value in to_try:
             new_state = state.copy()
-            new_state.depth += 2  # Lower the priority of what we got by fuzzing.
+            new_state.depth += 5  # Lower the priority of what we got by fuzzing.
             new_state.solver.add(variable == value)
             self.add_branch(new_state)
 
@@ -267,12 +268,20 @@ class SymbolicMachine:
                 else:
                     state.stack_push(BVV_0 if s2 == 0 else (s0 * s1) % s2)
             elif op == opcode_values.EXP:
-                base, exponent = solution(state.stack_pop()), state.stack_pop()
-                if base == 2:
+                base, exponent = state.stack_pop(), state.stack_pop()
+                base_sol = solution(base)
+                if base_sol == 2:
                     state.stack_push(1 << exponent)
                 else:
-                    exponent = solution(exponent)
-                    state.stack_push(claripy.BVV(base ** exponent, 256))
+                    try:
+                        exponent_sol = solution(exponent)
+                    except MultipleSolutionsError:
+                        state.stack_push(exponent)  # restore stack
+                        state.stack_push(base)
+                        self.add_for_fuzzing(state, exponent, EXP_EXPONENT_FUZZ)
+                        return False
+                    else:
+                        state.stack_push(claripy.BVV(base_sol ** exponent_sol, 256))
             elif op == opcode_values.LT:
                 s0, s1 = (
                     state.stack_pop(),
@@ -298,6 +307,7 @@ class SymbolicMachine:
                 )  # pylint:disable=invalid-name
                 state.stack_push(bool_to_bv(claripy.SGT(s0, s1)))
             elif op == opcode_values.SIGNEXTEND:
+                # TODO: Use Claripy's SignExt that should do exactly that.
                 s0, s1 = (
                     state.stack_pop(),
                     state.stack_pop(),
