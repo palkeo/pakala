@@ -40,7 +40,7 @@ BVV_0 = bvv(0)
 BVV_1 = bvv(1)
 
 # interesting values aligned to classic parameters.
-CALLDATASIZE_FUZZ = [0, 4, 32, 36, 64, 68, 100, 132, 164, 196]
+CALLDATASIZE_FUZZ = [0, 4, 32, 36, 64, 68, 96, 100, 132, 136]
 RETURNDATACOPY_SIZE_FUZZ = [0, 32]
 EXP_EXPONENT_FUZZ = [min, max]
 
@@ -130,9 +130,9 @@ class SymbolicMachine:
             to_try |= set(state.solver.eval(variable, nb_random))
 
         logger.debug("Fuzzing will try %s in %s.", variable, to_try)
+        state.depth += 10  # Lower the priority of what we got by fuzzing.
         for value in to_try:
             new_state = state.copy()
-            new_state.depth += 5  # Lower the priority of what we got by fuzzing.
             new_state.solver.add(variable == value)
             self.add_branch(new_state)
 
@@ -433,15 +433,15 @@ class SymbolicMachine:
                 return True
 
             elif op == opcode_values.CALLDATALOAD:
-                indexes = state.stack_pop()
+                index = state.stack_pop()
                 try:
-                    index = solution(indexes)
+                    index_sol = solution(index)
                 except MultipleSolutionsError:
-                    state.stack_push(indexes)  # restore the stack
-                    self.add_for_fuzzing(state, indexes, CALLDATASIZE_FUZZ)
+                    state.stack_push(index)  # restore the stack
+                    self.add_for_fuzzing(state, index, CALLDATASIZE_FUZZ)
                     return False
-                state.solver.add(state.env.calldata_size >= index + 32)
-                state.stack_push(state.env.calldata.read(index, 32))
+                state.solver.add(state.env.calldata_size >= index_sol + 32)
+                state.stack_push(state.env.calldata.read(index_sol, 32))
             elif op == opcode_values.CALLDATASIZE:
                 state.stack_push(state.env.calldata_size)
             elif op == opcode_values.CALLDATACOPY:
