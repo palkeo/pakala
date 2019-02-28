@@ -15,8 +15,6 @@ contract Mapping {
     }
 
     function transfer(uint amount, address beneficiary) public {
-        require(beneficiary != msg.sender);
-
         Participant storage p = participants[msg.sender];
 
         // The following require will always hold because we are substracting
