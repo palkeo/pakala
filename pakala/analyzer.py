@@ -149,12 +149,15 @@ class BaseAnalyzer(object):
         total_received_by_others = utils.bvv(0)
 
         for call in state.calls:
+            # TODO: Improve delegatecall support! And make it clearer it's
+            # delegatecall, not just based on the length.
             assert 6 <= len(call) <= 7
             value, to, gas = call[-3:]  # pylint: disable=unused-variable,invalid-name
 
             delegatecall = len(call) == 6
             to_me = state.solver.satisfiable(
-                extra_constraints=[to[159:0] == self.caller[159:0]])
+                extra_constraints=[to[159:0] == self.caller[159:0]]
+            )
 
             if delegatecall:
                 if to_me:
@@ -207,7 +210,8 @@ class BaseAnalyzer(object):
             # in case of failure, because claripy internals tend to change a lot.
             try:
                 logger.info(
-                    "Found call bug. Model: %s", next(state.solver.solver._get_models()).model
+                    "Found call bug. Model: %s",
+                    next(state.solver.solver._get_models()).model,
                 )
             except Exception:
                 logger.info("Found call bug.")
