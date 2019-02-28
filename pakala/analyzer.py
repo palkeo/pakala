@@ -149,16 +149,23 @@ class BaseAnalyzer(object):
         total_received_by_others = utils.bvv(0)
 
         for call in state.calls:
+            assert 6 <= len(call) <= 7
             value, to, gas = call[-3:]  # pylint: disable=unused-variable,invalid-name
-            if state.solver.satisfiable(
-                extra_constraints=[to[159:0] == self.caller[159:0]]
-            ):
-                extra_constraints.append(to[159:0] == self.caller[159:0])
-                total_received_by_me += value
-            else:
-                total_received_by_others += value
 
-            extra_constraints.append(value <= total_sent + path[0].env.balance)
+            delegatecall = len(call) == 6
+            to_me = state.solver.satisfiable(
+                extra_constraints=[to[159:0] == self.caller[159:0]])
+
+            if delegatecall:
+                if to_me:
+                    logger.info("Found delegatecall bug.")
+                    return True
+            else:
+                if to_me:
+                    total_received_by_me += value
+                else:
+                    total_received_by_others += value
+                extra_constraints.append(value <= total_sent + path[0].env.balance)
 
         final_balance = (
             path[0].env.balance
