@@ -40,7 +40,8 @@ BVV_0 = bvv(0)
 BVV_1 = bvv(1)
 
 # interesting values aligned to classic parameters.
-CALLDATASIZE_FUZZ = [0, 4, 32, 36, 64, 68, 96, 100, 132, 136]
+CALLDATALOAD_INDEX_FUZZ = [0, 32, 64] + [4, 36, 68, 100, 136]
+CALLDATACOPY_SIZE_FUZZ = list(range(9)) + [16, 32, 64]
 RETURNDATACOPY_SIZE_FUZZ = [0, 32]
 EXP_EXPONENT_FUZZ = [min, max]
 
@@ -438,7 +439,7 @@ class SymbolicMachine:
                     index_sol = solution(index)
                 except MultipleSolutionsError:
                     state.stack_push(index)  # restore the stack
-                    self.add_for_fuzzing(state, index, CALLDATASIZE_FUZZ)
+                    self.add_for_fuzzing(state, index, CALLDATALOAD_INDEX_FUZZ)
                     return False
                 state.solver.add(state.env.calldata_size >= index_sol + 32)
                 state.stack_push(state.env.calldata.read(index_sol, 32))
@@ -455,7 +456,7 @@ class SymbolicMachine:
                 try:
                     size = solution(size)
                 except MultipleSolutionsError:
-                    self.add_for_fuzzing(old_state, size, CALLDATASIZE_FUZZ)
+                    self.add_for_fuzzing(old_state, size, CALLDATACOPY_SIZE_FUZZ)
                     return False
                 state.memory.copy_from(state.env.calldata, mstart, dstart, size)
                 state.solver.add(state.env.calldata_size >= dstart + size)
