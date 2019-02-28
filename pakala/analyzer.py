@@ -200,7 +200,7 @@ class BaseAnalyzer(object):
             # in case of failure, because claripy internals tend to change a lot.
             try:
                 logger.info(
-                    "Found call bug. Model: %s", next(state.solver._get_models()).model
+                    "Found call bug. Model: %s", next(state.solver.solver._get_models()).model
                 )
             except Exception:
                 logger.info("Found call bug.")
