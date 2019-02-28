@@ -41,6 +41,18 @@ class TestCheckState(unittest.TestCase):
             utils.bvv(0),
         ]
 
+    def get_delegatecall(self, to=None):
+        if to is None:
+            to = self.env.caller
+        return [
+            utils.bvv(0),
+            utils.bvv(0),
+            utils.bvv(0),
+            utils.bvv(0),
+            to,
+            utils.bvv(0),
+        ]
+
     def test_nothing(self):
         self.assertFalse(self.check_state(self.state))
 
@@ -50,6 +62,14 @@ class TestCheckState(unittest.TestCase):
 
     def test_send_back(self):
         self.state.calls.append(self.get_call(self.env.value))
+        self.assertFalse(self.check_state(self.state))
+
+    def test_delegatecall(self):
+        self.state.calls.append(self.get_delegatecall())
+        self.assertTrue(self.check_state(self.state))
+
+    def test_delegatecall_to_other(self):
+        self.state.calls.append(self.get_delegatecall(to=utils.bvv(0)))
         self.assertFalse(self.check_state(self.state))
 
     def test_send_back_more(self):
