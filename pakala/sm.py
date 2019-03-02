@@ -157,7 +157,7 @@ class SymbolicMachine:
             if state.pc >= len(self.code):
                 return True
 
-            op = self.code.next()
+            op = next(self.code)
             self.coverage[state.pc] += 1
 
             logger.debug("NEW STEP")
