@@ -46,6 +46,7 @@ def with_new_env(state):
     state = state.copy()
     state.env = new_env
     state.replace(functools.partial(env.replace, old_env, new_env))
+    state.replace(state.solver.regenerate_hash_symbols())
 
     for read_k, read_v in state.storage_read.items():
         new_v = claripy.BVS("storage[%s]" % read_k, 256)

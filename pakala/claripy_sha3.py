@@ -184,18 +184,23 @@ class Solver:
         # First replacement: apply r() everywhere.
         new_constraints = [r(i) for i in self.solver.constraints]
         self.hashes = {r(k): r(v) for k, v in self.hashes.items()}
-        # Second one: change the hash symbols as well.
-        # Also needed in case we re-import constraints before the replacement:
-        # the input is different and we don't want the symbols to be the same.
-        new_hashes = {k: claripy.BVS("SHA3", 256) for k, v in self.hashes.items()}
-        for k in self.hashes:
-            r_from, r_to = self.hashes[k], new_hashes[k]
-            new_constraints = [i.replace(r_from, r_to) for i in new_constraints]
-        self.hashes = new_hashes
 
         # We need to rebuild the solver because we cannot just modify the constraints.
         self.solver = get_claripy_solver()
         self.solver.add(new_constraints)
+
+    def regenerate_hash_symbols(self):
+        # We can copy such a solver, and replace symbols in a new environment,
+        # and want to combine() it again with the parent solver, or one derived
+        # from it. In that case the hashes symbols need to be different! So we
+        # can use that function and call replace() on all the symbols to use
+        # new hash symbols everywhere.
+        new_hashes = {k: claripy.BVS('SHA3', 256) for k, v in self.hashes.items()}
+        def r(ast):
+            for in_ in self.hashes:
+                ast = ast.replace(self.hashes[in_], new_hashes[in_])
+            return ast
+        return r
 
     def combine(self, others):
         other_claripy_solvers = [i.solver for i in others]
@@ -207,7 +212,10 @@ class Solver:
         for other in others:
             for k, v in self.hashes.items():
                 # Make sure the hash symbols are distinct
-                assert all(v is not v2 for v2 in other.hashes.values())
+                if any(v is v2 for v2 in other.hashes.values()):
+                    # Call regenerate_hash_symbols() on one of them first?
+                    raise ValueError("Cannot combine with equivalent hashes.")
+
                 # TODO: If some hash input are equal, we should merge the hash
                 # symols here, it would be more efficient.
             combined.hashes.update(other.hashes)

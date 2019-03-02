@@ -155,6 +155,7 @@ class TestSha3Support(unittest.TestCase):
 
         new_state = old_state.copy()
         new_state.replace(functools.partial(env.replace, old_env, new_env))
+        new_state.replace(new_state.solver.regenerate_hash_symbols())
 
         self.assertTrue(new_state.solver.satisfiable())
         self.assertFalse(
@@ -177,6 +178,54 @@ class TestSha3Support(unittest.TestCase):
         self.assertTrue(new_state.solver.satisfiable())
         self.assertEqual(len(old_state.solver.constraints), 3)
         self.assertEqual(len(old_state.solver.hashes), 2)
+
+    def test_env_replace_merge_with_recursive_hash(self):
+        old_env = env.Env(b"")
+        new_env = old_env.clean_copy()
+
+        old_state = State(old_env)
+        old_state.solver.add(Sha3(Sha3(old_env.caller)) == Sha3(old_env.value))
+
+        self.assertTrue(old_state.solver.satisfiable())
+        self.assertFalse(
+            old_state.solver.satisfiable(extra_constraints=[old_env.value == 5])
+        )
+
+        new_state = old_state.copy()
+        new_state.replace(functools.partial(env.replace, old_env, new_env))
+        new_state.replace(new_state.solver.regenerate_hash_symbols())
+
+        self.assertTrue(new_state.solver.satisfiable())
+        self.assertFalse(
+            new_state.solver.satisfiable(extra_constraints=[new_env.value == 5])
+        )
+        self.assertTrue(
+            new_state.solver.satisfiable(extra_constraints=[old_env.value == 5])
+        )
+
+        new_state.solver.add(old_env.value == new_env.value)
+        self.assertTrue(new_state.solver.satisfiable())
+        self.assertFalse(
+            new_state.solver.satisfiable(extra_constraints=[new_env.value == 5])
+        )
+        self.assertFalse(
+            new_state.solver.satisfiable(extra_constraints=[old_env.value == 5])
+        )
+
+        old_state.solver = old_state.solver.combine([new_state.solver])
+        self.assertTrue(new_state.solver.satisfiable())
+        self.assertEqual(len(old_state.solver.constraints), 3)
+        self.assertEqual(len(old_state.solver.hashes), len(new_state.solver.hashes) * 2)
+
+    def test_cannot_combine(self):
+        """If we didn't do a replace(), we cannot combine the same thing."""
+        s = get_solver()
+        a = claripy.BVS('a', 256)
+        s.add(Sha3(a) == 8)
+        s2 = s.branch()
+        with self.assertRaises(ValueError):
+            s.combine([s2])
+
 
 
 if __name__ == "__main__":
