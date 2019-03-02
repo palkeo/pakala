@@ -556,6 +556,11 @@ class SymbolicMachine:
             elif op == opcode_values.CALL:
                 state.pc += 1
 
+                # pylint:disable=unused-variable
+                gas, to_, value, meminstart, meminsz, memoutstart, memoutsz = (
+                    state.stack_pop() for _ in range(7)
+                )
+
                 # First possibility: the call fails
                 # (always possible with a call stack big enough)
                 state_fail = state.copy()
@@ -563,17 +568,15 @@ class SymbolicMachine:
                 self.add_branch(state_fail)
 
                 # Second possibility: success.
-                state.calls.append(state.stack[-7:])
+                state.calls.append((memoutsz, memoutstart, meminsz, meminstart, value, to_, gas))
 
-                # pylint:disable=unused-variable
-                gas, to_, value, meminstart, meminsz, memoutstart, memoutsz = (
-                    state.stack_pop() for _ in range(7)
-                )
-
-                # TODO: If the call is to a specific contract we don't control,
-                # don't assume it could return anything, or even be successful.
                 memoutsz = solution(memoutsz)
                 if memoutsz != 0:
+                    # If we expect some output, let's constraint the call to
+                    # be to a contract that we do control. Otherwise it could
+                    # return anything...
+                    state.solver.add(to_[159:0] == utils.DEFAULT_CALLER[159:0])
+
                     memoutstart = solution(memoutstart)
                     state.memory.write(
                         memoutstart,
@@ -588,22 +591,25 @@ class SymbolicMachine:
             elif op == opcode_values.DELEGATECALL:
                 state.pc += 1
 
+                # pylint:disable=unused-variable
+                gas, to_, meminstart, meminsz, memoutstart, memoutsz = (
+                    state.stack_pop() for _ in range(6)
+                )
+
                 # First possibility: the call fails
                 # (always possible with a call stack big enough)
                 state_fail = state.copy()
                 state_fail.stack_push(BVV_0)
                 self.add_branch(state_fail)
 
-                # Second possibility: success.
-                state.calls.append(state.stack[-6:])
-
-                # pylint:disable=unused-variable
-                gas, to_, meminstart, meminsz, memoutstart, memoutsz = (
-                    state.stack_pop() for _ in range(6)
-                )
-
-                # TODO: If the call is to a specific contract we don't control,
+                # If the call is to a specific contract we don't control,
                 # don't assume it could return anything, or even be successful.
+                # So we say we need to be able to call an arbitrary contract.
+                state.solver.add(to_[159:0] == utils.DEFAULT_CALLER[159:0])
+
+                # Second possibility: success.
+                state.calls.append((memoutsz, memoutstart, meminsz, meminstart, to_, gas))
+
                 memoutsz = solution(memoutsz)
                 if memoutsz != 0:
                     memoutstart = solution(memoutstart)
