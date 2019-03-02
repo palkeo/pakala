@@ -106,7 +106,7 @@ class TestCheckState(unittest.TestCase):
 
     def test_send_back_twice(self):
         self.state.calls.append(self.get_call(self.env.value))
-        self.state.calls.append(self.get_call(self.env.value / 10))
+        self.state.calls.append(self.get_call(self.env.value / 8))
         self.assertTrue(self.check_state(self.state))
 
     def test_send_back_fixed_amount(self):
