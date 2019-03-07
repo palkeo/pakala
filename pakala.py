@@ -197,7 +197,7 @@ print(
 
 if balance < args.min_to_receive:
     err_exit(
-        "Balance is smaller than --min-wei-to-receive: "
+        "Balance is smaller than --min-to-receive: "
         "the analyzer will never find anything."
     )
 
