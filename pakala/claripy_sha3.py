@@ -65,6 +65,9 @@ class Solver:
         self.solver = claripy_solver or get_claripy_solver()
         self.hashes = hashes or {}  # Mapping hash input to the symbol
 
+    def get_model(self):
+        return next(self.solver._get_models()).model
+
     def branch(self):
         return Solver(claripy_solver=self.solver.branch(), hashes=self.hashes.copy())
 
