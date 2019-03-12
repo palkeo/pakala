@@ -51,6 +51,7 @@ class SolidityTest(unittest.TestCase):
         identifier, properties = list(output['contracts'].items())[0]
         bin_runtime = properties['bin-runtime']
 
+        logger.info("Runtime bytecode: %s", bin_runtime)
         bin_runtime = codecs.decode(bin_runtime, 'hex')
         logger.info("Compiled. Symbolic execution.")
 
