@@ -268,6 +268,15 @@ class SymbolicMachine:
                     state.stack_push(claripy.If(s2 == 0, BVV_0, (s0 * s1) % s2))
                 else:
                     state.stack_push(BVV_0 if s2 == 0 else (s0 * s1) % s2)
+            elif op == opcode_values.SHL:
+                shift, value = state.stack_pop(), state.stack_pop()
+                state.stack_push(value << shift)
+            elif op == opcode_values.SHR:
+                shift, value = state.stack_pop(), state.stack_pop()
+                state.stack_push(value.LShR(shift))
+            elif op == opcode_values.SAR:
+                shift, value = state.stack_pop(), state.stack_pop()
+                state.stack_push(claripy.RotateRight(value, shift))
             elif op == opcode_values.EXP:
                 base, exponent = state.stack_pop(), state.stack_pop()
                 base_sol = solution(base)

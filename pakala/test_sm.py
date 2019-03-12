@@ -172,6 +172,36 @@ class TestInstructions(unittest.TestCase):
         self.run_code([PUSH1, 3, PUSH1, 7, EXP])
         self.assert_stack([343])
 
+    def test_shl(self):
+        self.run_code([PUSH1, 1, PUSH1, 1, SHL])
+        self.assert_stack([2])
+        self.run_code([PUSH1, 1, PUSH1, 0, SHL])
+        self.assert_stack([1])
+        self.run_code([PUSH1, 1, PUSH1, 2, SHL])
+        self.assert_stack([4])
+        self.run_code([PUSH1, 1, PUSH2, 1, 0, SHL])
+        self.assert_stack([0])
+
+    def test_shr(self):
+        self.run_code([PUSH1, 2, PUSH1, 1, SHR])
+        self.assert_stack([1])
+        self.run_code([PUSH1, 2, PUSH1, 0, SHR])
+        self.assert_stack([2])
+        self.run_code([PUSH1, 2, PUSH1, 2, SHR])
+        self.assert_stack([0])
+        self.run_code([PUSH1, 2, PUSH2, 1, 0, SHR])
+        self.assert_stack([0])
+
+    def test_sar(self):
+        self.run_code([PUSH1, 2, PUSH1, 1, SAR])
+        self.assert_stack([1])
+        self.run_code([PUSH1, 2, PUSH1, 0, SAR])
+        self.assert_stack([2])
+        self.run_code([PUSH1, 2, PUSH1, 2, SAR])
+        self.assert_stack([2 ** 255])
+        self.run_code([PUSH1, 2, PUSH2, 1, 0, SAR])
+        self.assert_stack([2])
+
     def test_signextend(self):
         self.run_code([PUSH1, 0xFF, PUSH1, 0x0, SIGNEXTEND])
         self.assert_stack([2 ** 256 - 1])
