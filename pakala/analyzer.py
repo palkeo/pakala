@@ -124,7 +124,7 @@ class BaseAnalyzer(object):
         logger.debug("Check state: %s", state)
         logger.debug("Constraints: %s", state.solver.constraints)
 
-        extra_constraints = []  # From the environment (block number, whatever)
+        solver = state.solver.branch()
 
         if path is None:
             path = [state]
@@ -132,21 +132,22 @@ class BaseAnalyzer(object):
             # So we go and fetch it.
             for key, value in state.storage_read.items():
                 constraint = state.storage_read[key] == self._read_storage(state, key)
-                extra_constraints.append(constraint)
+                solver.add(constraint)
                 logger.debug("Add storage constraint: %s", constraint)
 
         for s in path:
-            extra_constraints += s.env.extra_constraints()
-            extra_constraints += [
+            solver.add(list(s.env.extra_constraints()))
+            solver.add([
                 s.env.caller == utils.DEFAULT_CALLER,
                 s.env.origin == utils.DEFAULT_CALLER,
-            ]
+            ])
 
         # Calls
         total_sent = sum(s.env.value for s in path)
         sent_constraints = [s.env.value < self.max_wei_to_send for s in path]
+
         total_received_by_me = utils.bvv(0)
-        total_received_by_others = utils.bvv(0)
+        total_received = utils.bvv(0)
 
         for call in state.calls:
             # TODO: Improve delegatecall support! And make it clearer it's
@@ -155,38 +156,32 @@ class BaseAnalyzer(object):
             value, to, gas = call[-3:]  # pylint: disable=unused-variable,invalid-name
 
             delegatecall = len(call) == 6
-            to_me = state.solver.satisfiable(
-                extra_constraints=[to[159:0] == self.caller[159:0]]
-            )
 
             if delegatecall:
-                if to_me:
+                if solver.satisfiable(extra_constraints=[to[159:0] == self.caller[159:0]]):
                     logger.info("Found delegatecall bug.")
                     return True
             else:
-                if to_me:
-                    total_received_by_me += value
-                else:
-                    total_received_by_others += value
-                extra_constraints.append(value <= total_sent + path[0].env.balance)
+                total_received_by_me += claripy.If(to[159:0] == self.caller[159:0], value, utils.bvv(0))
+                total_received += value
+                solver.add(value <= total_sent + path[0].env.balance)
 
         final_balance = (
             path[0].env.balance
             + total_sent
-            - total_received_by_me
-            - total_received_by_others
+            - total_received
         )
 
         # Suicide
         if state.selfdestruct_to is not None:
-            constraints = extra_constraints + [
+            constraints = [
                 final_balance >= self.min_wei_to_receive,
                 state.selfdestruct_to[159:0] == self.caller[159:0],
             ]
             logger.debug("Check for selfdestruct bug with constraints %s", constraints)
-            if state.solver.satisfiable(extra_constraints=constraints):
+            if solver.satisfiable(extra_constraints=constraints):
                 logger.info("Found selfdestruct bug. Model: %s",
-                            state.solver.get_model())
+                            solver.get_model())
                 return True
 
         if total_received_by_me is utils.bvv(0):
@@ -194,20 +189,15 @@ class BaseAnalyzer(object):
 
         logger.debug("Found calls back to caller: %s", total_received_by_me)
 
-        constraints = (
-            sent_constraints
-            + extra_constraints
-            + [
-                final_balance >= 0,
+        solver.add(sent_constraints)
+        solver.add([
+                claripy.SGE(final_balance, 0),
                 total_received_by_me > total_sent,  # I get more than what I sent?
                 total_received_by_me > self.min_wei_to_receive,
-            ]
-        )
+        ])
 
-        logger.debug("Extra constraints: %r", constraints)
-
-        if state.solver.satisfiable(extra_constraints=constraints):
-            logger.info("Found call bug. Model: %s", state.solver.get_model())
+        if solver.satisfiable():
+            logger.info("Found call bug. Model: %s", solver.get_model())
             return True
 
         return False
