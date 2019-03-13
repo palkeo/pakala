@@ -577,7 +577,9 @@ class SymbolicMachine:
                 self.add_branch(state_fail)
 
                 # Second possibility: success.
-                state.calls.append((memoutsz, memoutstart, meminsz, meminstart, value, to_, gas))
+                state.calls.append(
+                    (memoutsz, memoutstart, meminsz, meminstart, value, to_, gas)
+                )
 
                 memoutsz = solution(memoutsz)
                 if memoutsz != 0:
@@ -617,7 +619,9 @@ class SymbolicMachine:
                 state.solver.add(to_[159:0] == utils.DEFAULT_CALLER[159:0])
 
                 # Second possibility: success.
-                state.calls.append((memoutsz, memoutstart, meminsz, meminstart, to_, gas))
+                state.calls.append(
+                    (memoutsz, memoutstart, meminsz, meminstart, to_, gas)
+                )
 
                 memoutsz = solution(memoutsz)
                 if memoutsz != 0:

@@ -163,9 +163,7 @@ class Solver:
                 pairs_done.add((s2, s1))
 
         if constraint_added:
-            return self._hash_constraints(
-                extra_constraints, hashes, pairs_done
-            )
+            return self._hash_constraints(extra_constraints, hashes, pairs_done)
 
         assert self.solver.satisfiable(extra_constraints=extra_constraints)
 
@@ -200,11 +198,13 @@ class Solver:
         # from it. In that case the hashes symbols need to be different! So we
         # can use that function and call replace() on all the symbols to use
         # new hash symbols everywhere.
-        new_hashes = {k: claripy.BVS('SHA3', 256) for k, v in self.hashes.items()}
+        new_hashes = {k: claripy.BVS("SHA3", 256) for k, v in self.hashes.items()}
+
         def r(ast):
             for in_ in self.hashes:
                 ast = ast.replace(self.hashes[in_], new_hashes[in_])
             return ast
+
         return r
 
     def combine(self, others):

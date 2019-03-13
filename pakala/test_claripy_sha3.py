@@ -220,12 +220,11 @@ class TestSha3Support(unittest.TestCase):
     def test_cannot_combine(self):
         """If we didn't do a replace(), we cannot combine the same thing."""
         s = get_solver()
-        a = claripy.BVS('a', 256)
+        a = claripy.BVS("a", 256)
         s.add(Sha3(a) == 8)
         s2 = s.branch()
         with self.assertRaises(ValueError):
             s.combine([s2])
-
 
 
 if __name__ == "__main__":

@@ -137,10 +137,12 @@ class BaseAnalyzer(object):
 
         for s in path:
             solver.add(list(s.env.extra_constraints()))
-            solver.add([
-                s.env.caller == utils.DEFAULT_CALLER,
-                s.env.origin == utils.DEFAULT_CALLER,
-            ])
+            solver.add(
+                [
+                    s.env.caller == utils.DEFAULT_CALLER,
+                    s.env.origin == utils.DEFAULT_CALLER,
+                ]
+            )
 
         # Calls
         total_sent = sum(s.env.value for s in path)
@@ -158,19 +160,19 @@ class BaseAnalyzer(object):
             delegatecall = len(call) == 6
 
             if delegatecall:
-                if solver.satisfiable(extra_constraints=[to[159:0] == self.caller[159:0]]):
+                if solver.satisfiable(
+                    extra_constraints=[to[159:0] == self.caller[159:0]]
+                ):
                     logger.info("Found delegatecall bug.")
                     return True
             else:
-                total_received_by_me += claripy.If(to[159:0] == self.caller[159:0], value, utils.bvv(0))
+                total_received_by_me += claripy.If(
+                    to[159:0] == self.caller[159:0], value, utils.bvv(0)
+                )
                 total_received += value
                 solver.add(value <= total_sent + path[0].env.balance)
 
-        final_balance = (
-            path[0].env.balance
-            + total_sent
-            - total_received
-        )
+        final_balance = path[0].env.balance + total_sent - total_received
 
         # Suicide
         if state.selfdestruct_to is not None:
@@ -180,8 +182,7 @@ class BaseAnalyzer(object):
             ]
             logger.debug("Check for selfdestruct bug with constraints %s", constraints)
             if solver.satisfiable(extra_constraints=constraints):
-                logger.info("Found selfdestruct bug. Model: %s",
-                            solver.get_model())
+                logger.info("Found selfdestruct bug. Model: %s", solver.get_model())
                 return True
 
         if total_received_by_me is utils.bvv(0):
@@ -190,11 +191,13 @@ class BaseAnalyzer(object):
         logger.debug("Found calls back to caller: %s", total_received_by_me)
 
         solver.add(sent_constraints)
-        solver.add([
+        solver.add(
+            [
                 claripy.SGE(final_balance, 0),
                 total_received_by_me > total_sent,  # I get more than what I sent?
                 total_received_by_me > self.min_wei_to_receive,
-        ])
+            ]
+        )
 
         if solver.satisfiable():
             logger.info("Found call bug. Model: %s", solver.get_model())
