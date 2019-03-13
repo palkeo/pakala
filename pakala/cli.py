@@ -154,121 +154,123 @@ analyzer.add_argument(
     metavar="BALANCE",
 )
 
-args = parser.parse_args()
 
-if args.v.isnumeric():
-    coloredlogs.install(level=int(args.v))
-elif hasattr(logging, args.v.upper()):
-    coloredlogs.install(level=getattr(logging, args.v.upper()))
-else:
-    err_exit("Logging should be DEBUG/INFO/WARNING/ERROR.")
+def main():
+    args = parser.parse_args()
 
-try:
-    logging.debug("Node working. Block %i ", w3.eth.blockNumber)
-except web3.exceptions.UnhandledRequest:
-    err_exit(
-        "Seems like Web3.py can't connect to your Ethereum node.\n"
-        "If you don't have one and you want to use Infura, you can set "
-        "WEB3_PROVIDER_URI as follows:\n"
-        "$ export WEB3_PROVIDER_URI='https://mainnet.infura.io'"
+    if args.v.isnumeric():
+        coloredlogs.install(level=int(args.v))
+    elif hasattr(logging, args.v.upper()):
+        coloredlogs.install(level=getattr(logging, args.v.upper()))
+    else:
+        err_exit("Logging should be DEBUG/INFO/WARNING/ERROR.")
+
+    try:
+        logging.debug("Node working. Block %i ", w3.eth.blockNumber)
+    except web3.exceptions.UnhandledRequest:
+        err_exit(
+            "Seems like Web3.py can't connect to your Ethereum node.\n"
+            "If you don't have one and you want to use Infura, you can set "
+            "WEB3_PROVIDER_URI as follows:\n"
+            "$ export WEB3_PROVIDER_URI='https://mainnet.infura.io'"
+        )
+
+    if args.contract_addr == "-":
+        # Let's read the runtime bytecode from stdin
+        code = sys.stdin.read().strip("\n")
+        if not code.isalnum():
+            err_exit("Runtime bytecode read from stdin needs to be hexadecimal.")
+        code = codecs.decode(code, "hex")
+        # Dummy address, dummy balance
+        args.contract_addr = "0xDEADBEEF00000000000000000000000000000000"
+        if not args.force_balance:
+            args.force_balance = Web3.toWei(1.337, "ether")
+    else:
+        code = w3.eth.getCode(args.contract_addr, block_identifier=args.block)
+
+    balance = args.force_balance or w3.eth.getBalance(
+        args.contract_addr, block_identifier=args.block
     )
 
-if args.contract_addr == "-":
-    # Let's read the runtime bytecode from stdin
-    code = sys.stdin.read().strip("\n")
-    if not code.isalnum():
-        err_exit("Runtime bytecode read from stdin needs to be hexadecimal.")
-    code = codecs.decode(code, "hex")
-    # Dummy address, dummy balance
-    args.contract_addr = "0xDEADBEEF00000000000000000000000000000000"
-    if not args.force_balance:
-        args.force_balance = Web3.toWei(1.337, "ether")
-else:
-    code = w3.eth.getCode(args.contract_addr, block_identifier=args.block)
-
-balance = args.force_balance or w3.eth.getBalance(
-    args.contract_addr, block_identifier=args.block
-)
-
-print(
-    "Analyzing contract at %s with balance %f ether."
-    % (args.contract_addr, Web3.fromWei(balance, "ether"))
-)
-
-if balance < args.min_to_receive:
-    err_exit(
-        "Balance is smaller than --min-to-receive: "
-        "the analyzer will never find anything."
+    print(
+        "Analyzing contract at %s with balance %f ether."
+        % (args.contract_addr, Web3.fromWei(balance, "ether"))
     )
 
-if args.summarize:
-    logging.info(
-        "Summarizer enabled, we won't constrain the caller/origin "
-        "so more of the contract can get explored. "
-        "It may be slower."
+    if balance < args.min_to_receive:
+        err_exit(
+            "Balance is smaller than --min-to-receive: "
+            "the analyzer will never find anything."
+        )
+
+    if args.summarize:
+        logging.info(
+            "Summarizer enabled, we won't constrain the caller/origin "
+            "so more of the contract can get explored. "
+            "It may be slower."
+        )
+        e = env.Env(
+            code, address=utils.bvv(int(args.contract_addr, 16)), balance=utils.bvv(balance)
+        )
+    else:
+        e = env.Env(
+            code,
+            address=utils.bvv(int(args.contract_addr, 16)),
+            caller=utils.DEFAULT_CALLER,
+            origin=utils.DEFAULT_CALLER,
+            balance=utils.bvv(balance),
+        )
+
+    print("Starting symbolic execution step...")
+
+    s = sm.SymbolicMachine(e, fuzz=not args.disable_fuzzing)
+    s.execute(timeout_sec=args.exec_timeout)
+
+    print("Symbolic execution finished with coverage %i%%." % int(s.get_coverage() * 100))
+    print(
+        "Outcomes: %i interesting. %i total and %i unfinished paths."
+        % (
+            sum(int(o.is_interesting()) for o in s.outcomes),
+            len(s.outcomes),
+            len(s.partial_outcomes),
+        )
     )
-    e = env.Env(
-        code, address=utils.bvv(int(args.contract_addr, 16)), balance=utils.bvv(balance)
-    )
-else:
-    e = env.Env(
-        code,
-        address=utils.bvv(int(args.contract_addr, 16)),
-        caller=utils.DEFAULT_CALLER,
-        origin=utils.DEFAULT_CALLER,
-        balance=utils.bvv(balance),
-    )
-
-print("Starting symbolic execution step...")
-
-s = sm.SymbolicMachine(e, fuzz=not args.disable_fuzzing)
-s.execute(timeout_sec=args.exec_timeout)
-
-print("Symbolic execution finished with coverage %i%%." % int(s.get_coverage() * 100))
-print(
-    "Outcomes: %i interesting. %i total and %i unfinished paths."
-    % (
-        sum(int(o.is_interesting()) for o in s.outcomes),
-        len(s.outcomes),
-        len(s.partial_outcomes),
-    )
-)
 
 
-if args.summarize:
+    if args.summarize:
+        print()
+        print("Methods from the summarizer:")
+        summary.HumanSummarizer(s).print_methods()
+
     print()
-    print("Methods from the summarizer:")
-    summary.HumanSummarizer(s).print_methods()
+    print("Starting analysis step...")
 
-print()
-print("Starting analysis step...")
+    ra = recursive_analyzer.RecursiveAnalyzer(
+        max_wei_to_send=args.max_to_send,
+        min_wei_to_receive=args.min_to_receive,
+        block=args.block,
+    )
+    bug = ra.check_states(
+        s.outcomes, timeout=args.analysis_timeout, max_depth=args.max_transaction_depth
+    )
 
-ra = recursive_analyzer.RecursiveAnalyzer(
-    max_wei_to_send=args.max_to_send,
-    min_wei_to_receive=args.min_to_receive,
-    block=args.block,
-)
-bug = ra.check_states(
-    s.outcomes, timeout=args.analysis_timeout, max_depth=args.max_transaction_depth
-)
-
-if bug:
-    solver = bug[2]
-    if logging.getLogger().isEnabledFor(logging.DEBUG):
-        print("Composite state:")
-        print(bug[0].debug_string())
+    if bug:
+        solver = bug[2]
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            print("Composite state:")
+            print(bug[0].debug_string())
+            print()
+            print()
+        print("Path:")
+        for i, state in enumerate(bug[1]):
+            print()
+            print("Transaction %i, symbolic state:" % (i + 1))
+            print(state.debug_string())
+            print()
+            print("Transaction %i, example solution:" % (i + 1))
+            print(state.env.solution_string(solver))
+            print()
         print()
-        print()
-    print("Path:")
-    for i, state in enumerate(bug[1]):
-        print()
-        print("Transaction %i, symbolic state:" % (i + 1))
-        print(state.debug_string())
-        print()
-        print("Transaction %i, example solution:" % (i + 1))
-        print(state.env.solution_string(solver))
-        print()
-    print()
-    print("======> Bug found! Need %i transactions. <======" % len(bug[1]))
-else:
-    print("Nothing to report.")
+        print("======> Bug found! Need %i transactions. <======" % len(bug[1]))
+    else:
+        print("Nothing to report.")

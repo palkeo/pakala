@@ -50,4 +50,6 @@ setup(
     extras_require={
         'test': ['mock'],
     },
+
+    entry_points={'console_scripts': ['pakala=pakala.cli:main']},
 )
