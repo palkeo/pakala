@@ -685,8 +685,15 @@ class SymbolicMachine:
 
             coverage = sum(bool(c) for c in self.coverage)
             if coverage > last_coverage:
+                if time.process_time() - time_last_coverage_increase > 1:
+                    logger.log(
+                        utils.INFO_INTERACTIVE,
+                        "Coverage now %i%%. Queue size %i. Got %i outcomes.",
+                        int(self.get_coverage() * 100),
+                        len(self.branch_queue),
+                        len(self.outcomes),
+                    )
                 time_last_coverage_increase = time.process_time()
-                logger.log(utils.INFO_INTERACTIVE, "Coverage is now %i.", coverage)
                 last_coverage = coverage
 
             if (
