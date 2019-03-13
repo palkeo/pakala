@@ -253,15 +253,21 @@ bug = ra.check_states(
 )
 
 if bug:
+    solver = bug[2]
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         print("Composite state:")
         print(bug[0].debug_string())
         print()
         print()
     print("Path:")
-    for state in bug[1]:
+    for i, state in enumerate(bug[1]):
         print()
+        print("Transaction %i, symbolic state:" % (i + 1))
         print(state.debug_string())
+        print()
+        print("Transaction %i, example solution:" % (i + 1))
+        print(state.env.solution_string(solver))
+        print()
     print()
     print("======> Bug found! Need %i transactions. <======" % len(bug[1]))
 else:

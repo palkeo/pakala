@@ -164,7 +164,8 @@ class BaseAnalyzer(object):
                     extra_constraints=[to[159:0] == self.caller[159:0]]
                 ):
                     logger.info("Found delegatecall bug.")
-                    return True
+                    solver.add(to[159:0] == self.caller[159:0])
+                    return solver
             else:
                 total_received_by_me += claripy.If(
                     to[159:0] == self.caller[159:0], value, utils.bvv(0)
@@ -182,11 +183,12 @@ class BaseAnalyzer(object):
             ]
             logger.debug("Check for selfdestruct bug with constraints %s", constraints)
             if solver.satisfiable(extra_constraints=constraints):
-                logger.info("Found selfdestruct bug. Model: %s", solver.get_model())
-                return True
+                logger.info("Found selfdestruct bug.")
+                solver.add(constraints)
+                return solver
 
         if total_received_by_me is utils.bvv(0):
-            return False
+            return
 
         logger.debug("Found calls back to caller: %s", total_received_by_me)
 
@@ -200,10 +202,8 @@ class BaseAnalyzer(object):
         )
 
         if solver.satisfiable():
-            logger.info("Found call bug. Model: %s", solver.get_model())
-            return True
-
-        return False
+            logger.info("Found call bug.")
+            return solver
 
 
 class Analyzer(BaseAnalyzer):

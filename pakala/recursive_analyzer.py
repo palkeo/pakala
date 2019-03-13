@@ -90,8 +90,9 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
         self.state_done.add(hash(composite_state))
 
         logger.debug("Check for bugs in composite state...")
-        if self.check_state(composite_state, path=path):
-            return path
+        solver_bug = self.check_state(composite_state, path=path)
+        if solver_bug is not None:
+            return solver_bug
 
         # If we kill the contract, we can't make any more call!
         if path[-1].selfdestruct_to is not None:
@@ -242,8 +243,9 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
             new_composite_states = self._append_state(initial_composite_state, path[-1])
 
             for composite_state in new_composite_states:
-                if self._search_path(composite_state, path) is not None:
-                    return composite_state, path
+                solver = self._search_path(composite_state, path)
+                if solver is not None:
+                    return composite_state, path, solver
 
             if timeout and time.process_time() - time_start > timeout:
                 logger.debug("Timeout at depth %i, stopping.", len(path))

@@ -1,3 +1,4 @@
+import pprint
 import time
 
 import claripy
@@ -74,6 +75,15 @@ class Env(object):
                 yield getattr(self, name) >= min_
             if max_ is not None:
                 yield getattr(self, name) <= max_
+
+    def solution_string(self, solver):
+        calldata_size = solver.min(self.calldata_size)
+        solution = {
+            'calldata': "{0:0{1}x}".format(solver.min(self.calldata.read(0, calldata_size)), calldata_size * 2),
+            'value': solver.min(self.value),
+            'caller': "{0:#042x}".format(solver.eval(self.caller, 1)[0]),
+        }
+        return pprint.pformat(solution, width=90)
 
 
 def replace(old_env, new_env, var):
