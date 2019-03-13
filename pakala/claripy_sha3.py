@@ -135,7 +135,7 @@ class Solver:
         if pairs_done is None:
             pairs_done = set()
 
-        new_extra_constraints = []
+        constraint_added = False
         for (in1, s1), (in2, s2) in itertools.combinations(hashes.items(), 2):
             if (s1, s2) in pairs_done:
                 continue
@@ -145,24 +145,26 @@ class Solver:
             ):
                 logger.debug("Adding input constraint: %s == %s", in1, in2)
                 if in1.size() == in2.size():
-                    new_extra_constraints.append(in1 == in2)
+                    extra_constraints.append(in1 == in2)
                 else:
-                    new_extra_constraints.append(False)
+                    extra_constraints.append(False)
                 pairs_done.add((s1, s2))
                 pairs_done.add((s2, s1))
+                constraint_added = True
             # Do s1 needs to be != to s2 ? Then in1 needs to be != to in2
             elif not self.solver.satisfiable(
                 extra_constraints=extra_constraints + [s1 == s2]
             ):
                 logger.debug("Adding input constraint: %s != %s", in1, in2)
                 if in1.size() == in2.size():
-                    new_extra_constraints.append(in1 != in2)
+                    extra_constraints.append(in1 != in2)
+                    constraint_added = True
                 pairs_done.add((s1, s2))
                 pairs_done.add((s2, s1))
 
-        if new_extra_constraints:
+        if constraint_added:
             return self._hash_constraints(
-                extra_constraints + new_extra_constraints, hashes, pairs_done
+                extra_constraints, hashes, pairs_done
             )
 
         assert self.solver.satisfiable(extra_constraints=extra_constraints)
