@@ -32,7 +32,7 @@ but that condition always holds because we are substracting two unsigned integer
 Let's scan it:
 
 ```
-./pakala.py 0xeBE6c7a839A660a0F04BdF6816e2eA182F5d542C --force-balance="1 ether"
+pakala 0xeBE6c7a839A660a0F04BdF6816e2eA182F5d542C --force-balance="1 ether"
 ```
 
 The contract balance being 0, we won't be able to have it send us some ethers.
@@ -44,7 +44,7 @@ for that code path to be taken, storage that has been read/written...
 
 Advice: look at ``calldata[0]`` in the constraints to see the function signature for each transaction.
 
-See ``./pakala.py help`` for more complete usage information.
+See ``pakala help`` for more complete usage information.
 
 How does it works? What does it do?
 -----------------------------------
