@@ -148,9 +148,9 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 read_written = [r_key == w_key, r_val == w_val]
                 not_overwritten_c.append(r_key != w_key)
 
-                if composite_state.solver.satisfiable(extra_constraints=read_written):
-                    cs = composite_state.copy()
-                    cs.solver.add(read_written)
+                cs = composite_state.copy()
+                cs.solver.add(read_written)
+                if cs.solver.satisfiable():
                     composite_states_next.append(cs)
                     logger.debug(
                         "Found key read %s, corresponding to key written %s",
