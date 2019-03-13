@@ -69,8 +69,13 @@ class SymbolicMachine:
         self.outcomes = []
         # List of all the place where we didn't know how to continue execution
         self.partial_outcomes = []
+        # Do we want to enable fuzzing? (see add_for_fuzzing below)
         self.fuzz = fuzz
+        # Did fuzzing got used?
+        self.fuzzed = False
+        # Errors that happened during execution. These are normal.
         self.code_errors = collections.Counter()
+        # Errors of the interpreter / symbolic execution engine. Not cool :(
         self.interpreter_errors = collections.Counter()
         self.add_branch(State(env))
 
@@ -115,6 +120,10 @@ class SymbolicMachine:
 
         if not self.fuzz:
             raise utils.InterpreterError(state, "Fuzzer is disabled")
+        if not self.fuzzed:
+            self.fuzzed = True
+            logger.warning("Fuzzer got used (forced concretization). "
+                           "We will lose accuracy and risk state explosion.")
 
         to_try = set()
         nb_random = 0
