@@ -79,9 +79,11 @@ class Env(object):
     def solution_string(self, solver):
         calldata_size = solver.min(self.calldata_size)
         solution = {
-            'calldata': "{0:0{1}x}".format(solver.min(self.calldata.read(0, calldata_size)), calldata_size * 2),
-            'value': solver.min(self.value),
-            'caller': "{0:#042x}".format(solver.eval(self.caller, 1)[0]),
+            "calldata": "{0:0{1}x}".format(
+                solver.min(self.calldata.read(0, calldata_size)), calldata_size * 2
+            ),
+            "value": solver.min(self.value),
+            "caller": "{0:#042x}".format(solver.eval(self.caller, 1)[0]),
         }
         return pprint.pformat(solution, width=90)
 

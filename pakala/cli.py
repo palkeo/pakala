@@ -210,7 +210,9 @@ def main():
             "It may be slower."
         )
         e = env.Env(
-            code, address=utils.bvv(int(args.contract_addr, 16)), balance=utils.bvv(balance)
+            code,
+            address=utils.bvv(int(args.contract_addr, 16)),
+            balance=utils.bvv(balance),
         )
     else:
         e = env.Env(
@@ -226,7 +228,9 @@ def main():
     s = sm.SymbolicMachine(e, fuzz=not args.disable_fuzzing)
     s.execute(timeout_sec=args.exec_timeout)
 
-    print("Symbolic execution finished with coverage %i%%." % int(s.get_coverage() * 100))
+    print(
+        "Symbolic execution finished with coverage %i%%." % int(s.get_coverage() * 100)
+    )
     print(
         "Outcomes: %i interesting. %i total and %i unfinished paths."
         % (
@@ -235,7 +239,6 @@ def main():
             len(s.partial_outcomes),
         )
     )
-
 
     if args.summarize:
         print()
