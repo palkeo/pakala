@@ -277,3 +277,7 @@ def main():
         print("======> Bug found! Need %i transactions. <======" % len(bug[1]))
     else:
         print("Nothing to report.")
+
+
+if __name__ == "__main__":
+    main()
