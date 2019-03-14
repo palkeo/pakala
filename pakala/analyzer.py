@@ -61,7 +61,7 @@ class BaseAnalyzer(object):
             # If we cannot list storage keys, let's read the beginning of the
             # space, and below we will mark that it's not exhaustive anyway.
             logger.warning(
-                "Cannot list storage keys (%s). We will loose a bit of accuracy. "
+                "Cannot list storage keys (%s). We will lose a bit of accuracy. "
                 "Try to use a node that supports the parity_listStorageKeys RPC. ",
                 e.__class__.__name__,
             )
