@@ -720,6 +720,9 @@ class SymbolicMachine:
             logger.debug("Executing branch at %i with depth %i.", state.pc, depth)
             try:
                 success = self.exec_branch(state)
+            except KeyboardInterrupt:
+                self.interpreter_errors['KeyboardInterrupt'] += 1
+                break
             except (utils.CodeError, claripy.errors.UnsatError) as error:
                 logger.debug("Code error: %s", error)
                 self.code_errors[repr(error)] += 1
