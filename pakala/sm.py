@@ -708,7 +708,7 @@ class SymbolicMachine:
             if (
                 not timeout_sec
                 and time.process_time() - time_last_coverage_increase
-                > max(60, time_last_coverage_increase - time_start)
+                > max(120, time_last_coverage_increase - time_start)
             ) or (timeout_sec and time.process_time() - time_start > timeout_sec):
                 logger.debug("Timeout.")
                 self.interpreter_errors["execute timeout"] += 1
