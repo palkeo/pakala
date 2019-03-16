@@ -140,7 +140,7 @@ class SymbolicMachine:
             to_try |= set(state.solver.eval(variable, nb_random))
 
         logger.debug("Fuzzing will try %s in %s.", variable, to_try)
-        state.depth += 10  # Lower the priority of what we got by fuzzing.
+        state.depth += 1 if len(to_try) == 1 else 10  # Lower the priority of what we got by fuzzing.
         for value in to_try:
             new_state = state.copy()
             new_state.solver.add(variable == value)
