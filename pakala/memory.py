@@ -7,7 +7,8 @@ from pakala import utils
 logger = logging.getLogger(__name__)
 
 # Maximum size the memory is allowed to have.
-MEMORY_SIZE = 4096
+# Can be None if we want it to be unbounded.
+MEMORY_SIZE = None
 
 
 def _slice(v, start, end):
@@ -34,7 +35,7 @@ class Memory(object):
 
     def read(self, addr, size):
         assert size >= 0
-        if addr + size >= MEMORY_SIZE:
+        if MEMORY_SIZE and addr + size >= MEMORY_SIZE:
             raise utils.CodeError("Memory.read: memory would exceed MEMORY_SIZE")
         logger.debug("%s.read(%i, %i)" % (self.__class__.__name__, addr, size))
 
@@ -69,7 +70,7 @@ class Memory(object):
     def write(self, addr, size, value):
         assert size >= 0
         assert value.size() // 8 == size, "BVV size doesn't match size in Memory.write"
-        if addr + size >= MEMORY_SIZE:
+        if MEMORY_SIZE and addr + size >= MEMORY_SIZE:
             raise utils.CodeError("Memory.write: memory would exceed MEMORY_SIZE")
 
         logger.debug(
@@ -107,7 +108,7 @@ class Memory(object):
 
     def copy_from(self, other, start_self, start_other, size):
         assert size >= 0
-        if start_self + size >= MEMORY_SIZE or start_other + size >= MEMORY_SIZE:
+        if MEMORY_SIZE and (start_self + size >= MEMORY_SIZE or start_other + size >= MEMORY_SIZE):
             raise utils.CodeError("Memory.copy_from: memory would exceed MEMORY_SIZE")
         if size == 0:
             return
