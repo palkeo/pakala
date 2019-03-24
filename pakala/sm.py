@@ -477,8 +477,7 @@ class SymbolicMachine:
                     self.add_for_fuzzing(old_state, size, CALLDATACOPY_SIZE_FUZZ)
                     return False
                 state.memory.copy_from(state.env.calldata, mstart, dstart, size)
-                # We don't add a constraint on the size here. We can copy something
-                # out of bound, it's fine. See consensys diligence ROP EVM challenge.
+                state.solver.add(state.env.calldata_size >= dstart + size)
             elif op == opcode_values.CODESIZE:
                 state.stack_push(bvv(len(self.code)))
             elif op == opcode_values.EXTCODESIZE:
