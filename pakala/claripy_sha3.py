@@ -71,6 +71,7 @@ class Solver:
     def add(self, constraints, **kwargs):
         if isinstance(constraints, claripy.ast.base.Base):
             constraints = [constraints]
+        logger.debug("Adding constraint: %r", constraints)
         assert _no_sha3_symbols(constraints)
         constraints = [_symbolize_hashes(c, self.hashes) for c in constraints]
         return self.solver.add(constraints, **kwargs)
