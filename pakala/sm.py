@@ -40,10 +40,10 @@ BVV_0 = bvv(0)
 BVV_1 = bvv(1)
 
 # interesting values aligned to classic parameters.
-CALLDATALOAD_INDEX_FUZZ = [0, 32, 64] + [4, 36, 68, 100, 136]
-CALLDATACOPY_SIZE_FUZZ = list(range(9)) + [16, 32, 64]
-RETURNDATACOPY_SIZE_FUZZ = [0, 32]
-EXP_EXPONENT_FUZZ = [min, max]
+CALLDATALOAD_INDEX_FUZZ = set(range(0, 32*3, 32)) | set(range(4, 32*5, 32))
+CALLDATACOPY_SIZE_FUZZ = set(range(9)) | {0, 32} | {4, 34, 4 + 32 * 16}
+RETURNDATACOPY_SIZE_FUZZ = {0, 32}
+EXP_EXPONENT_FUZZ = {min, max}
 
 
 class MultipleSolutionsError(ValueError):
@@ -459,7 +459,6 @@ class SymbolicMachine:
                     state.stack_push(index)  # restore the stack
                     self.add_for_fuzzing(state, index, CALLDATALOAD_INDEX_FUZZ)
                     return False
-                state.solver.add(state.env.calldata_size >= index_sol + 32)
                 state.stack_push(state.env.calldata.read(index_sol, 32))
             elif op == opcode_values.CALLDATASIZE:
                 state.stack_push(state.env.calldata_size)
@@ -477,7 +476,6 @@ class SymbolicMachine:
                     self.add_for_fuzzing(old_state, size, CALLDATACOPY_SIZE_FUZZ)
                     return False
                 state.memory.copy_from(state.env.calldata, mstart, dstart, size)
-                state.solver.add(state.env.calldata_size >= dstart + size)
             elif op == opcode_values.CODESIZE:
                 state.stack_push(bvv(len(self.code)))
             elif op == opcode_values.EXTCODESIZE:

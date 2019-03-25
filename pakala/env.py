@@ -77,7 +77,7 @@ class Env(object):
                 yield getattr(self, name) <= max_
 
     def solution_string(self, solver):
-        calldata_size = solver.min(self.calldata_size)
+        calldata_size = max(solver.min(self.calldata_size), self.calldata.size())
         solution = {
             "calldata": "{0:0{1}x}".format(
                 solver.min(self.calldata.read(0, calldata_size)), calldata_size * 2
