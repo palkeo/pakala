@@ -509,7 +509,6 @@ class TestInstructions(unittest.TestCase):
                 MLOAD,
             ]
         )
-        self.assertEqual(self.state.solver.min(self.state.env.calldata_size), 84)
         self.assert_stack(
             [self.state.env.calldata.read(20, 32), self.state.env.calldata.read(52, 32)]
         )
