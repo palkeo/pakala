@@ -79,7 +79,7 @@ class Env(object):
     def solution_string(self, solver):
         calldata_size = max(solver.min(self.calldata_size), self.calldata.size())
         solution = {
-            "calldata": "{0:0{1}x}".format(
+            "data": "{0:0{1}x}".format(
                 solver.min(self.calldata.read(0, calldata_size)), calldata_size * 2
             ),
             "value": solver.min(self.value),
