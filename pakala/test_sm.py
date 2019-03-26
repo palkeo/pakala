@@ -487,8 +487,7 @@ class TestInstructions(unittest.TestCase):
         self.assertTrue(self.state.stack[0] is not self.state.stack[1])
 
     def test_calldatasize(self):
-        self.run_code([CALLDATASIZE, PUSH1, 4, CALLDATALOAD])
-        self.assertEqual(self.state.solver.min(self.state.stack[0]), 36)
+        self.run_code([CALLDATASIZE])
 
     def test_calldatacopy(self):
         # size, dstart, mstart
