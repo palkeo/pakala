@@ -103,14 +103,9 @@ class BaseAnalyzer(object):
                         self.actual_storage[concrete_key] = self._read_storage_key(
                             concrete_key
                         )
-                if len(concrete_keys) == 1:
-                    return self.actual_storage[concrete_keys[0]]
-                else:
-                    # We will lose accuracy, and assume that our actual_storage is exhaustive...
-                    logger.debug(
-                        "Non-exhaustive storage and multiple values possible for key %r",
-                        key,
-                    )
+                # Warning: Here we used to return the value if there was a single solution,
+                # however sha3 solver may artificially pin a key temporarily and return a single
+                # solution where there could be more. So we always use a claripy.If.
 
         symbolic_storage = utils.bvv(0)  # When uninitialized: 0
         for k, v in self.actual_storage.items():
