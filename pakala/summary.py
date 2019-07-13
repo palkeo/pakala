@@ -51,7 +51,7 @@ class HumanSummarizer:
             for state in states:
                 if state.calls:
                     flags.add("call")
-                if state.selfdestruct_to:
+                if state.selfdestruct_to is not None:
                     flags.add("selfdestruct")
 
                 for s in self.sm.partial_outcomes:
