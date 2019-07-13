@@ -108,7 +108,9 @@ class Memory(object):
 
     def copy_from(self, other, start_self, start_other, size):
         assert size >= 0
-        if MEMORY_SIZE and (start_self + size >= MEMORY_SIZE or start_other + size >= MEMORY_SIZE):
+        if MEMORY_SIZE and (
+            start_self + size >= MEMORY_SIZE or start_other + size >= MEMORY_SIZE
+        ):
             raise utils.CodeError("Memory.copy_from: memory would exceed MEMORY_SIZE")
         if size == 0:
             return

@@ -40,7 +40,7 @@ BVV_0 = bvv(0)
 BVV_1 = bvv(1)
 
 # interesting values aligned to classic parameters.
-CALLDATALOAD_INDEX_FUZZ = set(range(0, 32*3, 32)) | set(range(4, 32*5, 32))
+CALLDATALOAD_INDEX_FUZZ = set(range(0, 32 * 3, 32)) | set(range(4, 32 * 5, 32))
 CALLDATACOPY_SIZE_FUZZ = set(range(9)) | {0, 32} | {4, 34, 4 + 32 * 16}
 RETURNDATACOPY_SIZE_FUZZ = {0, 32}
 EXP_EXPONENT_FUZZ = {min, max}
@@ -122,8 +122,10 @@ class SymbolicMachine:
             raise utils.InterpreterError(state, "Fuzzer is disabled")
         if not self.fuzzed:
             self.fuzzed = True
-            logger.warning("Fuzzer got used (forced concretization). "
-                           "We will lose accuracy and risk state explosion.")
+            logger.warning(
+                "Fuzzer got used (forced concretization). "
+                "We will lose accuracy and risk state explosion."
+            )
 
         to_try = set()
         nb_random = 0
@@ -140,7 +142,9 @@ class SymbolicMachine:
             to_try |= set(state.solver.eval(variable, nb_random))
 
         logger.debug("Fuzzing will try %s in %s.", variable, to_try)
-        state.depth += 1 if len(to_try) == 1 else 10  # Lower the priority of what we got by fuzzing.
+        state.depth += (
+            1 if len(to_try) == 1 else 10
+        )  # Lower the priority of what we got by fuzzing.
         for value in to_try:
             new_state = state.copy()
             new_state.solver.add(variable == value)
@@ -720,7 +724,7 @@ class SymbolicMachine:
             try:
                 success = self.exec_branch(state)
             except KeyboardInterrupt:
-                self.interpreter_errors['KeyboardInterrupt'] += 1
+                self.interpreter_errors["KeyboardInterrupt"] += 1
                 break
             except (utils.CodeError, claripy.errors.UnsatError) as error:
                 logger.debug("Code error: %s", error)
