@@ -1,5 +1,6 @@
 import unittest
 import functools
+import logging
 
 import claripy
 
@@ -97,9 +98,6 @@ class TestSha3Support(unittest.TestCase):
         in2 = claripy.BVS("in2", 256)
 
         self.assertFalse(s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == 0]))
-        self.assertFalse(
-            s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(bvv(0))])
-        )
         self.assertTrue(
             s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(Sha3(bvv(0)))])
         )
@@ -132,6 +130,42 @@ class TestSha3Support(unittest.TestCase):
 
         s_copy = s.branch()
         self.assertFalse(s_copy.satisfiable())
+
+    def test_solver_recursive_unbalanced(self):
+        s = get_solver()
+        in1 = claripy.BVS("in1", 256)
+        in2 = claripy.BVS("in2", 256)
+
+        self.assertFalse(
+            s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(bvv(0))])
+        )
+        self.assertTrue(
+            s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(in2)])
+        )
+        logging.debug('here')
+        self.assertTrue(
+            s.satisfiable(extra_constraints=[Sha3(in1) == Sha3(Sha3(in2))])
+        )
+
+        self.assertTrue(
+            s.satisfiable(extra_constraints=[Sha3(Sha3(Sha3(in1))) == Sha3(in2)])
+        )
+        self.assertTrue(
+            s.satisfiable(extra_constraints=[Sha3(in1) == Sha3(Sha3(Sha3(in2)))])
+        )
+
+    def test_solver_three_symbols(self):
+        s = get_solver()
+        in1 = claripy.BVS("in1", 256)
+        in2 = claripy.BVS("in2", 256)
+        in3 = claripy.BVS("in2", 256)
+
+        self.assertFalse(
+            s.satisfiable(extra_constraints=[Sha3(in1) == Sha3(Sha3(in3)) + Sha3(Sha3(Sha3(in2)))])
+        )
+        self.assertTrue(
+            s.satisfiable(extra_constraints=[in1 == Sha3(Sha3(in3)) + Sha3(Sha3(Sha3(in2)))])
+        )
 
     def test_solver_copy(self):
         s = get_solver()

@@ -1,5 +1,6 @@
 import logging
 import itertools
+import operator
 
 from claripy.ast import bv
 import claripy
@@ -49,8 +50,27 @@ def _no_sha3_symbol(ast):
         return all(_no_sha3_symbol(child) for child in ast.args)
 
 
+def _this_sha3_symbol(ast, symbol):
+    if not isinstance(ast, claripy.ast.base.Base):
+        return False
+    if ast is symbol:
+        return True
+    return any(_this_sha3_symbol(child, symbol) for child in ast.args)
+
+
+
 def _no_sha3_symbols(constraints):
     return all(_no_sha3_symbol(ast) for ast in constraints)
+
+
+def _hash_depth(hashes, hash_symbol):
+    """Returns how "deep" this hash symbol is, if it's inside another hash."""
+    depth = 0
+    for in1, s1 in hashes.items():
+        if _this_sha3_symbol(in1, hash_symbol):
+            assert s1 is not hash_symbol  # A hash cannot contain itself.
+            depth = max(depth, 1 + _hash_depth(hashes, s1))
+    return depth
 
 
 def get_claripy_solver():
@@ -168,7 +188,10 @@ class Solver:
 
         assert self.solver.satisfiable(extra_constraints=extra_constraints)
 
-        for in1, s1 in hashes.items():
+        # We need to first concretize the hashes that are the "deepest", i.e. that
+        # are serving as input for other hashes.
+        hash_depth = {symbol: _hash_depth(hashes, symbol) for symbol in hashes.values()}
+        for in1, s1 in sorted(hashes.items(), key=lambda i: hash_depth[i[1]], reverse=True):
             # Next line can raise UnsatError. Handled in the caller if needed.
             sol1, = self.solver.eval(in1, 1, extra_constraints=extra_constraints)
             extra_constraints.append(in1 == sol1)
@@ -180,7 +203,7 @@ class Solver:
             )
             assert len(sol1_bytes) * 8 == in1.length
             extra_constraints.append(s1 == eth_utils.crypto.keccak(sol1_bytes))
-            logger.debug("Added concrete constraint: %s", extra_constraints[-1])
+            logger.debug("Added concrete constraint on hash: %s and on input: %s", extra_constraints[-1], extra_constraints[-2])
 
         return tuple(extra_constraints)
 
