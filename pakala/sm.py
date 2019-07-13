@@ -543,7 +543,7 @@ class SymbolicMachine:
                         new_state.solver.add(read_written)
                         new_state.stack_push(w_value)
                         self.add_branch(new_state)
-                        state.solver.add(w_key != key)
+                    state.solver.add(w_key != key)
                 if state.solver.satisfiable():
                     assert key not in state.storage_written
                     if key not in state.storage_read:

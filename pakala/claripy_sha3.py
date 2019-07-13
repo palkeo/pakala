@@ -145,6 +145,7 @@ class Solver:
                 if in1.size() == in2.size():
                     extra_constraints.append(in1 == in2)
                 else:
+                    logger.debug("Size are different!")
                     extra_constraints.append(False)
                 pairs_done.add((s1, s2))
                 pairs_done.add((s2, s1))
@@ -157,6 +158,8 @@ class Solver:
                 if in1.size() == in2.size():
                     extra_constraints.append(in1 != in2)
                     constraint_added = True
+                else:
+                    logger.debug("Size are different!")
                 pairs_done.add((s1, s2))
                 pairs_done.add((s2, s1))
 
