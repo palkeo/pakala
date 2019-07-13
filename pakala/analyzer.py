@@ -132,6 +132,12 @@ class BaseAnalyzer(object):
 
         for s in path:
             solver.add(list(s.env.extra_constraints()))
+            solver.add(
+                [
+                    s.env.caller == utils.DEFAULT_CALLER,
+                    s.env.origin == utils.DEFAULT_CALLER,
+                ]
+            )
 
         # Calls
         total_sent = sum(s.env.value for s in path)

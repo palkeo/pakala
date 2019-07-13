@@ -77,7 +77,7 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
 
     @property
     def caller(self):
-        return utils.DEFAULT_CALLER
+        return self.reference_states[0][0].env.caller
 
     def _search_path(self, composite_state, path):
         logger.debug("Search path: %s", path)
