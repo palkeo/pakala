@@ -58,7 +58,6 @@ def _this_sha3_symbol(ast, symbol):
     return any(_this_sha3_symbol(child, symbol) for child in ast.args)
 
 
-
 def _no_sha3_symbols(constraints):
     return all(_no_sha3_symbol(ast) for ast in constraints)
 
@@ -191,7 +190,9 @@ class Solver:
         # We need to first concretize the hashes that are the "deepest", i.e. that
         # are serving as input for other hashes.
         hash_depth = {symbol: _hash_depth(hashes, symbol) for symbol in hashes.values()}
-        for in1, s1 in sorted(hashes.items(), key=lambda i: hash_depth[i[1]], reverse=True):
+        for in1, s1 in sorted(
+            hashes.items(), key=lambda i: hash_depth[i[1]], reverse=True
+        ):
             # Next line can raise UnsatError. Handled in the caller if needed.
             sol1, = self.solver.eval(in1, 1, extra_constraints=extra_constraints)
             extra_constraints.append(in1 == sol1)
@@ -203,7 +204,11 @@ class Solver:
             )
             assert len(sol1_bytes) * 8 == in1.length
             extra_constraints.append(s1 == eth_utils.crypto.keccak(sol1_bytes))
-            logger.debug("Added concrete constraint on hash: %s and on input: %s", extra_constraints[-1], extra_constraints[-2])
+            logger.debug(
+                "Added concrete constraint on hash: %s and on input: %s",
+                extra_constraints[-1],
+                extra_constraints[-2],
+            )
 
         return tuple(extra_constraints)
 

@@ -139,13 +139,9 @@ class TestSha3Support(unittest.TestCase):
         self.assertFalse(
             s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(bvv(0))])
         )
-        self.assertTrue(
-            s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(in2)])
-        )
-        logging.debug('here')
-        self.assertTrue(
-            s.satisfiable(extra_constraints=[Sha3(in1) == Sha3(Sha3(in2))])
-        )
+        self.assertTrue(s.satisfiable(extra_constraints=[Sha3(Sha3(in1)) == Sha3(in2)]))
+        logging.debug("here")
+        self.assertTrue(s.satisfiable(extra_constraints=[Sha3(in1) == Sha3(Sha3(in2))]))
 
         self.assertTrue(
             s.satisfiable(extra_constraints=[Sha3(Sha3(Sha3(in1))) == Sha3(in2)])
@@ -161,10 +157,14 @@ class TestSha3Support(unittest.TestCase):
         in3 = claripy.BVS("in2", 256)
 
         self.assertFalse(
-            s.satisfiable(extra_constraints=[Sha3(in1) == Sha3(Sha3(in3)) + Sha3(Sha3(Sha3(in2)))])
+            s.satisfiable(
+                extra_constraints=[Sha3(in1) == Sha3(Sha3(in3)) + Sha3(Sha3(Sha3(in2)))]
+            )
         )
         self.assertTrue(
-            s.satisfiable(extra_constraints=[in1 == Sha3(Sha3(in3)) + Sha3(Sha3(Sha3(in2)))])
+            s.satisfiable(
+                extra_constraints=[in1 == Sha3(Sha3(in3)) + Sha3(Sha3(Sha3(in2)))]
+            )
         )
 
     def test_solver_copy(self):
