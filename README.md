@@ -6,7 +6,7 @@ Pakala
 
 <img align="right" src="https://www.palkeo.com/en/_images/pakala-mani-sona.svg.png">
 
-"ilo Pakala li pakala e mani sona"
+*"ilo Pakala li pakala e mani sona"*
 
 * Pakala is a tool to search for exploitable bugs in Ethereum smart contracts.
 * Pakala is a symbolic execution engine for the Ethereum Virtual Machine.
