@@ -64,5 +64,6 @@ However, It only implements an "interesting" subset of the EVM. It doesn't handl
 * precompiles,
 * or a contract interacting with other contracts (DELEGATECALL, STATICCALL...).
 
-This means that CALL support is limited to sending ethers. Other tools like Manticore can do that much better.
+This means that CALL support is limited to sending ethers. Other tools like Manticore can do that much better, and the focus for
+Pakala was offensive vulnerability scanning of contracts *en masse*.
 
