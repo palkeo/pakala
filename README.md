@@ -50,3 +50,19 @@ How does it works? What does it do?
 -----------------------------------
 
 See the [introductory article](https://www.palkeo.com/projets/ethereum/pakala.html) for more information and a demo.
+
+In a nutshell:
+
+* It's very good at finding simple bugs in simple contracts.
+* The false-positive rate is very low. If it flags your contract it's likely people can drain it.
+* It can exploit non-trivial bugs requiring to overwrite some storage keys with others (array size underflow...), has a good
+  modeling of cryptographic hashes, and support chaining multiple transactions.
+
+However, It only implements an "interesting" subset of the EVM. It doesn't handle:
+
+* gas,
+* precompiles,
+* or a contract interacting with other contracts (DELEGATECALL, STATICCALL...).
+
+This means that CALL support is limited to sending ethers. Other tools like Manticore can do that much better.
+
