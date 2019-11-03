@@ -167,7 +167,7 @@ def main():
 
     try:
         logging.debug("Node working. Block %i ", w3.eth.blockNumber)
-    except web3.exceptions.UnhandledRequest:
+    except web3.exceptions.CannotHandleRequest:
         err_exit(
             "Seems like Web3.py can't connect to your Ethereum node.\n"
             "If you don't have one and you want to use Infura, you can set "
