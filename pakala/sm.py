@@ -164,14 +164,11 @@ class SymbolicMachine:
             solution = solutions[0]
             return solution if isinstance(solution, numbers.Number) else solution.value
 
-        self.code.pc = state.pc
-
         while True:
             if state.pc >= len(self.code):
                 return True
 
             op = self.code[state.pc]
-            self.code.pc += 1
             self.coverage[state.pc] += 1
 
             logger.debug("NEW STEP")
@@ -179,7 +176,6 @@ class SymbolicMachine:
             logger.debug("Stack: %s", state.stack)
             logger.debug("PC: %i, %#x", state.pc, op)
 
-            assert self.code.pc == state.pc + 1
             assert isinstance(op, numbers.Number)
             assert all(
                 isinstance(i, claripy.ast.base.BV) for i in state.stack
@@ -432,6 +428,7 @@ class SymbolicMachine:
                 return False
             elif opcode_values.PUSH1 <= op <= opcode_values.PUSH32:
                 pushnum = op - opcode_values.PUSH1 + 1
+                self.code.program_counter = state.pc + 1
                 raw_value = self.code.read(pushnum)
                 state.pc += pushnum
                 state.stack_push(bvv(int.from_bytes(raw_value, byteorder="big")))
@@ -790,7 +787,7 @@ class SymbolicMachine:
         logger.debug("Coverage analysis:")
         total_lines = 0
         covered_lines = 0
-        self.code.pc = 0
+        self.code.program_counter = 0
         for pc, instruction in enumerate(self.code):  # pylint:disable=invalid-name
             if pc == len(self.code):
                 break
