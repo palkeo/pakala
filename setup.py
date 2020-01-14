@@ -10,9 +10,12 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+with open(path.join(here, 'requirements.txt')) as f:
+    requirements = f.read().splitlines()
+
 setup(
     name='pakala',
-    version='1.1.8',
+    version='1.1.9',
 
     description='An EVM symbolic execution tool and vulnerability scanner',
 
@@ -45,11 +48,7 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['py-evm', 'claripy', 'web3', 'coloredlogs'],
-
-    extras_require={
-        'test': ['mock'],
-    },
+    install_requires=requirements,
 
     entry_points={'console_scripts': ['pakala=pakala.cli:main']},
 )
