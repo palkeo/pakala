@@ -20,6 +20,7 @@ ENV_VARS = (
     ("calldata_size", None, 2 ** 20),
     ("coinbase", None, None),
     ("difficulty", None, None),
+    ("chainid", None, None),
 )
 
 

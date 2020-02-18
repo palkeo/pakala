@@ -374,6 +374,10 @@ class SymbolicMachine:
                 state.stack_push(state.env.gas)
             elif op == opcode_values.ADDRESS:
                 state.stack_push(state.env.address)
+            elif op == opcode_values.CHAINID:
+                state.stack_push(state.env.chainid)
+            elif op == opcode_values.SELFBALANCE:
+                state.stack_push(state.env.balance)
             elif op == opcode_values.BALANCE:
                 addr = solution(state.stack_pop())
                 if addr != solution(state.env.address):
