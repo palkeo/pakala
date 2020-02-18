@@ -15,7 +15,7 @@ with open(path.join(here, 'requirements.txt')) as f:
 
 setup(
     name='pakala',
-    version='1.1.9',
+    version='1.1.10',
 
     description='An EVM symbolic execution tool and vulnerability scanner',
 
