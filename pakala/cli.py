@@ -169,10 +169,8 @@ def main():
         logging.debug("Node working. Block %i ", w3.eth.blockNumber)
     except web3.exceptions.CannotHandleRequest:
         err_exit(
-            "Seems like Web3.py can't connect to your Ethereum node.\n"
-            "If you don't have one and you want to use Infura, you can set "
-            "WEB3_PROVIDER_URI as follows:\n"
-            "$ export WEB3_PROVIDER_URI='https://mainnet.infura.io'"
+            "Seems like Web3.py can't auto-connect to your Ethereum node.\n"
+            "Please have a local node running or set the environment variable WEB3_PROVIDER_URI to the URL of your node."
         )
 
     if args.contract_addr == "-":
