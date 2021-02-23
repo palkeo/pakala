@@ -184,15 +184,18 @@ def main():
         if not args.force_balance:
             args.force_balance = Web3.toWei(1.337, "ether")
     else:
-        code = w3.eth.getCode(args.contract_addr, block_identifier=args.block)
+        addr = Web3.toChecksumAddress(args.contract_addr)
+        code = w3.eth.getCode(addr, block_identifier=args.block)
+
 
     balance = args.force_balance or w3.eth.getBalance(
-        args.contract_addr, block_identifier=args.block
+           addr, block_identifier=args.block
+
     )
 
     print(
         "Analyzing contract at %s with balance %f ether."
-        % (args.contract_addr, Web3.fromWei(balance, "ether"))
+            % (addr, Web3.fromWei(balance, "ether"))
     )
 
     if balance < args.min_to_receive:
@@ -209,13 +212,13 @@ def main():
         )
         e = env.Env(
             code,
-            address=utils.bvv(int(args.contract_addr, 16)),
+            address=utils.bvv(int(addr, 16)),
             balance=utils.bvv(balance),
         )
     else:
         e = env.Env(
             code,
-            address=utils.bvv(int(args.contract_addr, 16)),
+            address=utils.bvv(int(addr, 16)),
             caller=utils.DEFAULT_CALLER,
             origin=utils.DEFAULT_CALLER,
             balance=utils.bvv(balance),
