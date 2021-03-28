@@ -1,29 +1,31 @@
-contract Crowdfunding {
-    mapping(address => uint256) public balances;
-    address public owner;
-    uint256 INVEST_MIN = 1 ether;
-    uint256 INVEST_MAX = 10 ether;
+ contract Crowdfunding {
 
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
-    }
+  mapping(address => uint) public balances;
+  address public owner;
+  uint256 INVEST_MIN = 1 ether;
+  uint256 INVEST_MAX = 10 ether;
 
-    function crowdfunding() public {
-        owner = msg.sender;
-    }
+  modifier onlyOwner() {
+    require(msg.sender == owner);
+    _;
+  }
 
-    function withdrawfunds() public onlyOwner {
-        msg.sender.transfer(address(this).balance);
-    }
+  function crowdfunding() public {
+    owner = msg.sender;
+  }
 
-    function invest() public payable {
-        require(msg.value > INVEST_MIN && msg.value < INVEST_MAX);
+  function withdrawfunds() public onlyOwner {
+    msg.sender.transfer(address(this).balance);
+  }
 
-        balances[msg.sender] += msg.value;
-    }
+  function invest() public payable {
+    require(msg.value > INVEST_MIN && msg.value < INVEST_MAX);
 
-    function getBalance() public view returns (uint256) {
-        return balances[msg.sender];
-    }
+    balances[msg.sender] += msg.value;
+  }
+
+  function getBalance() public view returns (uint) {
+    return balances[msg.sender];
+  }
+
 }
