@@ -3,20 +3,19 @@
 // for inspiration.
 
 contract ArbitraryStorageWrite {
-  uint256[] private people;
-  uint256 private magic;
+    uint256[] private people;
+    uint256 private magic;
 
-  function addPeople(uint256 key, uint256 value) public {
-    people[key] = value;
-  }
+    function addPeople(uint256 key, uint256 value) public {
+        people[key] = value;
+    }
 
-  function removePeople() public {
-    people.length--;
-  }
+    function removePeople() public {
+        people.length--;
+    }
 
-  function () external payable {
-    require(magic == 42);
-    selfdestruct(msg.sender);
-  }
-
+    function() external payable {
+        require(magic == 42);
+        selfdestruct(msg.sender);
+    }
 }

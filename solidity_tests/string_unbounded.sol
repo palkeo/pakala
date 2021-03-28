@@ -3,7 +3,7 @@ library StringUtils {
         bytes memory a = bytes(_a);
         bytes memory b = bytes(_b);
         if (a.length != b.length) return false;
-        for (uint i = 0; i < a.length; i ++) {
+        for (uint256 i = 0; i < a.length; i++) {
             if (a[i] != b[i]) return false;
         }
         return true;
@@ -11,8 +11,8 @@ library StringUtils {
 }
 
 contract String {
-  function passwordSend(string memory s) public payable {
-    require(StringUtils.equal(s, "Hi!"));
-    msg.sender.send(address(this).balance / 10);
-  }
+    function passwordSend(string memory s) public payable {
+        require(StringUtils.equal(s, "Hi!"));
+        msg.sender.send(address(this).balance / 10);
+    }
 }

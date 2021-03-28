@@ -1,7 +1,7 @@
 contract Mapping {
     struct Participant {
-        uint total_paid;
-        uint payout;
+        uint256 total_paid;
+        uint256 payout;
     }
 
     mapping(address => Participant) participants;
@@ -14,7 +14,7 @@ contract Mapping {
         p.payout += msg.value;
     }
 
-    function transfer(uint amount, address beneficiary) public {
+    function transfer(uint256 amount, address beneficiary) public {
         Participant storage p = participants[msg.sender];
 
         // The following require will always hold because we are substracting
@@ -29,12 +29,11 @@ contract Mapping {
         b.payout += amount;
     }
 
-    function withdraw() public returns (int) {
+    function withdraw() public returns (int256) {
         Participant storage p = participants[msg.sender];
         require(p.payout > 0.1 ether && p.total_paid > 0);
         msg.sender.transfer(p.payout);
         p.payout = 0;
         return 42;
     }
-
 }

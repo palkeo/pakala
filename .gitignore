@@ -1,2 +1,9 @@
 *.pyc
-__pycache__/
+__pycache__
+.history
+.hypothesis/
+build/
+reports/
+.DS_Store
+node_modules
+
