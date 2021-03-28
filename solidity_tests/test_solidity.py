@@ -19,13 +19,13 @@ from pakala import analyzer
 
 logger = logging.getLogger(__name__)
 
-MAX_TO_SEND = Web3.toWei(1000, 'ether')
-MIN_TO_RECEIVE = Web3.toWei(1, 'wei')
+MAX_TO_SEND = Web3.toWei(1000, "ether")
+MIN_TO_RECEIVE = Web3.toWei(1, "wei")
 EXEC_TIMEOUT = 90
 ANALYSIS_TIMEOUT = 300
 MAX_TRANSACTION_DEPTH = 4
-ADDRESS = '0xDEADBEEF00000000000000000000000000000000'
-BALANCE = Web3.toWei(1, 'ether')
+ADDRESS = "0xDEADBEEF00000000000000000000000000000000"
+BALANCE = Web3.toWei(1, "ether")
 
 
 class SolidityTest(unittest.TestCase):
@@ -41,42 +41,45 @@ class SolidityTest(unittest.TestCase):
         logger.info("Compiling contract %s" % self.filename)
         p = subprocess.run(
             ["solc", "--optimize", "--combined-json=bin-runtime", self.filename],
-            capture_output=True, text=True)
-        self.assertEqual(p.returncode, 0,
-                         "solc compilation failed:\n%s" % p.stderr)
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(p.returncode, 0, "solc compilation failed:\n%s" % p.stderr)
 
         output = json.loads(p.stdout)
 
         assert "contracts" in output
-        identifier, properties = list(output['contracts'].items())[0]
-        bin_runtime = properties['bin-runtime']
+        identifier, properties = list(output["contracts"].items())[0]
+        bin_runtime = properties["bin-runtime"]
 
         logger.info("Runtime bytecode: %s", bin_runtime)
-        bin_runtime = codecs.decode(bin_runtime, 'hex')
+        bin_runtime = codecs.decode(bin_runtime, "hex")
         logger.info("Compiled. Symbolic execution.")
 
-        e = env.Env(bin_runtime,
-                    address=utils.bvv(int(ADDRESS, 16)),
-                    caller=utils.DEFAULT_CALLER,
-                    origin=utils.DEFAULT_CALLER,
-                    balance=utils.bvv(BALANCE))
+        e = env.Env(
+            bin_runtime,
+            address=utils.bvv(int(ADDRESS, 16)),
+            caller=utils.DEFAULT_CALLER,
+            origin=utils.DEFAULT_CALLER,
+            balance=utils.bvv(BALANCE),
+        )
         s = sm.SymbolicMachine(e)
         s.execute(timeout_sec=EXEC_TIMEOUT)
 
         self.assertTrue(s.outcomes)
 
         ra = recursive_analyzer.RecursiveAnalyzer(
-                max_wei_to_send=MAX_TO_SEND,
-                min_wei_to_receive=MIN_TO_RECEIVE,
-                block='invalid')
+            max_wei_to_send=MAX_TO_SEND,
+            min_wei_to_receive=MIN_TO_RECEIVE,
+            block="invalid",
+        )
 
         # Never contact the blockchain, instead all the storage are 0
         ra.actual_storage = {}
 
         bug = ra.check_states(
-                s.outcomes,
-                timeout=ANALYSIS_TIMEOUT,
-                max_depth=MAX_TRANSACTION_DEPTH)
+            s.outcomes, timeout=ANALYSIS_TIMEOUT, max_depth=MAX_TRANSACTION_DEPTH
+        )
 
         self.assertTrue(bug, self.filename)
 
@@ -86,9 +89,9 @@ def load_tests(loader, tests, pattern):
     return unittest.TestSuite(map(SolidityTest, files))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    logging.getLogger('claripy').setLevel(logging.INFO)
+    logging.getLogger("claripy").setLevel(logging.INFO)
     if len(sys.argv) == 1:
         unittest.main()
     else:

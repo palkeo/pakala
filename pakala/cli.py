@@ -187,15 +187,11 @@ def main():
         addr = Web3.toChecksumAddress(args.contract_addr)
         code = w3.eth.getCode(addr, block_identifier=args.block)
 
-
-    balance = args.force_balance or w3.eth.getBalance(
-           addr, block_identifier=args.block
-
-    )
+    balance = args.force_balance or w3.eth.getBalance(addr, block_identifier=args.block)
 
     print(
         "Analyzing contract at %s with balance %f ether."
-            % (addr, Web3.fromWei(balance, "ether"))
+        % (addr, Web3.fromWei(balance, "ether"))
     )
 
     if balance < args.min_to_receive:
@@ -210,11 +206,7 @@ def main():
             "so more of the contract can get explored. "
             "It may be slower."
         )
-        e = env.Env(
-            code,
-            address=utils.bvv(int(addr, 16)),
-            balance=utils.bvv(balance),
-        )
+        e = env.Env(code, address=utils.bvv(int(addr, 16)), balance=utils.bvv(balance),)
     else:
         e = env.Env(
             code,

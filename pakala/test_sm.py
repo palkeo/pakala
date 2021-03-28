@@ -437,7 +437,7 @@ class TestInstructions(unittest.TestCase):
     def test_sha3_empty(self):
         self.run_code([PUSH1, 0, PUSH1, 0, SHA3])
         self.assertEqual(1, len(self.state.stack))
-        sha3, = self.state.solver.eval(self.state.stack[0], 1)
+        (sha3,) = self.state.solver.eval(self.state.stack[0], 1)
         self.assertEqual(
             hex(sha3),
             hex(0xC5D2460186F7233C927E7DB2DCC703C0E500B653CA82273B7BFAD8045D85A470),
@@ -446,7 +446,7 @@ class TestInstructions(unittest.TestCase):
     def test_sha3_zeros(self):
         self.run_code([PUSH1, 32, PUSH1, 0, SHA3])
         self.assertEqual(1, len(self.state.stack))
-        sha3, = self.state.solver.eval(self.state.stack[0], 1)
+        (sha3,) = self.state.solver.eval(self.state.stack[0], 1)
         self.assertEqual(
             hex(sha3),
             hex(0x290DECD9548B62A8D60345A988386FC84BA6BC95484008F6362F93160EF3E563),
@@ -455,7 +455,7 @@ class TestInstructions(unittest.TestCase):
     def test_sha3_a_mstore8(self):
         self.run_code([PUSH1, 0x61, PUSH1, 0, MSTORE8, PUSH1, 1, PUSH1, 0, SHA3])
         self.assertEqual(1, len(self.state.stack))
-        sha3, = self.state.solver.eval(self.state.stack[0], 1)
+        (sha3,) = self.state.solver.eval(self.state.stack[0], 1)
         self.assertEqual(
             hex(sha3),
             # sha3('a')
@@ -465,7 +465,7 @@ class TestInstructions(unittest.TestCase):
     def test_sha3_a_mstore(self):
         self.run_code([PUSH1, 0x61, PUSH1, 0, MSTORE, PUSH1, 1, PUSH1, 31, SHA3])
         self.assertEqual(1, len(self.state.stack))
-        sha3, = self.state.solver.eval(self.state.stack[0], 1)
+        (sha3,) = self.state.solver.eval(self.state.stack[0], 1)
         self.assertEqual(
             hex(sha3),
             # sha3('a')
@@ -633,12 +633,12 @@ class TestOutcomes(unittest.TestCase):
         self.assertBEqual(outcome2.storage_written[outcome2.env.value], utils.bvv(43))
 
     def test_sload(self):
-        outcome, = self.outcomes([PUSH1, 0, SLOAD, PUSH1, 0, SLOAD])
+        (outcome,) = self.outcomes([PUSH1, 0, SLOAD, PUSH1, 0, SLOAD])
         self.assertTrue(utils.bvv(0) in outcome.storage_read)
         self.assertEqual(len(outcome.storage_read), 1)
 
     def test_sstore(self):
-        outcome, = self.outcomes(
+        (outcome,) = self.outcomes(
             [
                 PUSH1,
                 42,

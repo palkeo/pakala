@@ -23,7 +23,7 @@ def _symbolize_hashes(ast, hashes):
 
     # Replace SHA3 with a BVS
     if ast.op == "SHA3":
-        hash_input, = ast.args
+        (hash_input,) = ast.args
         hash_input = _symbolize_hashes(hash_input, hashes)
         try:
             return hashes[hash_input]
@@ -194,7 +194,7 @@ class Solver:
             hashes.items(), key=lambda i: hash_depth[i[1]], reverse=True
         ):
             # Next line can raise UnsatError. Handled in the caller if needed.
-            sol1, = self.solver.eval(in1, 1, extra_constraints=extra_constraints)
+            (sol1,) = self.solver.eval(in1, 1, extra_constraints=extra_constraints)
             extra_constraints.append(in1 == sol1)
             # lstrip() is needed if the length is 0.
             sol1_bytes = (
