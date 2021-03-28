@@ -63,23 +63,22 @@ class BaseAnalyzer(object):
             logger.warning(
                 "Cannot list storage keys (%s). We will lose a bit of accuracy. "
                 "Try to use a node that supports the parity_listStorageKeys RPC. ",
-                e.__class__.__name__,)
+                e.__class__.__name__,
+            )
             storage_keys = STORAGE_KEYS_WHEN_CANNOT_LIST
             self.actual_storage_exhaustive = False
         else:
             assert len(storage_keys) <= MAX_STORAGE_KEYS
-            self.actual_storage_exhaustive = len(
-                storage_keys) < MAX_STORAGE_KEYS
+            self.actual_storage_exhaustive = len(storage_keys) < MAX_STORAGE_KEYS
 
-        self.actual_storage = {
-            k: self._read_storage_key(k) for k in storage_keys}
+        self.actual_storage = {k: self._read_storage_key(k) for k in storage_keys}
 
         logger.info(
             "Loaded %i storage slots from the contract (%s). %i non-zero.",
             len(storage_keys),
-            "exhaustive"
-            if self.actual_storage_exhaustive else "non-exhaustive",
-            sum(1 for v in self.actual_storage.values() if v != 0),)
+            "exhaustive" if self.actual_storage_exhaustive else "non-exhaustive",
+            sum(1 for v in self.actual_storage.values() if v != 0),
+        )
         logger.debug("actual_storage: %r", self.actual_storage)
 
     def _read_storage(self, state, key):
@@ -102,7 +101,8 @@ class BaseAnalyzer(object):
                 for concrete_key in concrete_keys:
                     if concrete_key not in self.actual_storage:
                         self.actual_storage[concrete_key] = self._read_storage_key(
-                            concrete_key)
+                            concrete_key
+                        )
                 # Warning: Here we used to return the value if there was a single solution,
                 # however sha3 solver may artificially pin a key temporarily and return a single
                 # solution where there could be more. So we always use a claripy.If.
@@ -126,8 +126,7 @@ class BaseAnalyzer(object):
             # Static read were we never wrote, but we know the key is not symbolic.
             # So we go and fetch it.
             for key, value in state.storage_read.items():
-                constraint = state.storage_read[key] == self._read_storage(
-                    state, key)
+                constraint = state.storage_read[key] == self._read_storage(state, key)
                 solver.add(constraint)
                 logger.debug("Add storage constraint: %s", constraint)
 
@@ -177,8 +176,7 @@ class BaseAnalyzer(object):
                 final_balance >= self.min_wei_to_receive,
                 state.selfdestruct_to[159:0] == self.caller[159:0],
             ]
-            logger.debug(
-                "Check for selfdestruct bug with constraints %s", constraints)
+            logger.debug("Check for selfdestruct bug with constraints %s", constraints)
             if solver.satisfiable(extra_constraints=constraints):
                 logger.info("Found selfdestruct bug.")
                 solver.add(constraints)

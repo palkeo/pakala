@@ -61,12 +61,15 @@ class TestSymbolicMachine(unittest.TestCase):
         self.sm.add_for_fuzzing(
             state, variable, [min, max, None, None, None, None, 42, 1337]
         )
-        self.assertTrue(any(s.solver.eval(variable, 2) == (0,)
-                            for _, s in self.sm.branch_queue))
-        self.assertTrue(any(s.solver.eval(variable, 2) == (49,)
-                            for _, s in self.sm.branch_queue))
-        self.assertTrue(any(s.solver.eval(variable, 2) == (42,)
-                            for _, s in self.sm.branch_queue))
+        self.assertTrue(
+            any(s.solver.eval(variable, 2) == (0,) for _, s in self.sm.branch_queue)
+        )
+        self.assertTrue(
+            any(s.solver.eval(variable, 2) == (49,) for _, s in self.sm.branch_queue)
+        )
+        self.assertTrue(
+            any(s.solver.eval(variable, 2) == (42,) for _, s in self.sm.branch_queue)
+        )
         self.assertGreater(len(self.sm.branch_queue), 3)
 
     def test_execute(self):
@@ -216,11 +219,9 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([BVV_1])
         self.run_code([PUSH1, 7, PUSH1, 7, LT])
         self.assert_stack([BVV_0])
-        self.run_code([PUSH32] + [0xFF] * 31 + [250,
-                      PUSH32] + [0xFF] * 31 + [251, LT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, LT])
         self.assert_stack([BVV_0])
-        self.run_code([PUSH32] + [0xFF] * 31 + [250,
-                      PUSH32] + [0x00] * 31 + [251, LT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, LT])
         self.assert_stack([BVV_1])
 
     def test_gt(self):
@@ -228,11 +229,9 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([BVV_0])
         self.run_code([PUSH1, 7, PUSH1, 7, GT])
         self.assert_stack([BVV_0])
-        self.run_code([PUSH32] + [0xFF] * 31 + [250,
-                      PUSH32] + [0xFF] * 31 + [251, GT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, GT])
         self.assert_stack([BVV_1])
-        self.run_code([PUSH32] + [0xFF] * 31 + [250,
-                      PUSH32] + [0x00] * 31 + [251, GT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, GT])
         self.assert_stack([BVV_0])
 
     def test_slt(self):
@@ -240,11 +239,9 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([BVV_1])
         self.run_code([PUSH1, 7, PUSH1, 7, SLT])
         self.assert_stack([BVV_0])
-        self.run_code([PUSH32] + [0xFF] * 31 + [250,
-                      PUSH32] + [0xFF] * 31 + [251, SLT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, SLT])
         self.assert_stack([BVV_0])
-        self.run_code([PUSH32] + [0xFF] * 31 + [250,
-                      PUSH32] + [0x00] * 31 + [251, SLT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, SLT])
         self.assert_stack([BVV_0])
 
     def test_sgt(self):
@@ -252,11 +249,9 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([BVV_0])
         self.run_code([PUSH1, 7, PUSH1, 7, SGT])
         self.assert_stack([BVV_0])
-        self.run_code([PUSH32] + [0xFF] * 31 + [250,
-                      PUSH32] + [0xFF] * 31 + [251, SGT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0xFF] * 31 + [251, SGT])
         self.assert_stack([BVV_1])
-        self.run_code([PUSH32] + [0xFF] * 31 + [250,
-                      PUSH32] + [0x00] * 31 + [251, SGT])
+        self.run_code([PUSH32] + [0xFF] * 31 + [250, PUSH32] + [0x00] * 31 + [251, SGT])
         self.assert_stack([BVV_1])
 
     def test_eq(self):
@@ -331,9 +326,7 @@ class TestInstructions(unittest.TestCase):
         self.assert_stack([self.state.env.address])
 
     def test_balance(self):
-        self.run_code(
-            [ADDRESS, BALANCE],
-            env={"address": claripy.BVV(789, 256)})
+        self.run_code([ADDRESS, BALANCE], env={"address": claripy.BVV(789, 256)})
         self.assert_stack([self.state.env.balance])
 
         with self.assertRaises(ValueError):
@@ -353,8 +346,7 @@ class TestInstructions(unittest.TestCase):
 
     def test_blockhash(self):
         self.run_code([NUMBER, BLOCKHASH])
-        self.assert_stack([self.state.env.block_hashes
-                           [self.state.env.block_number]])
+        self.assert_stack([self.state.env.block_hashes[self.state.env.block_number]])
 
     def test_timestamp(self):
         self.run_code([TIMESTAMP])
@@ -390,8 +382,7 @@ class TestInstructions(unittest.TestCase):
             self.run_code([PUSH1, 4, JUMP, POP, PC])
 
     def test_jumpi(self):
-        r = self.run_code(
-            [PUSH1, 42, CALLVALUE, EQ, PUSH1, 8, JUMPI, PC, JUMPDEST])
+        r = self.run_code([PUSH1, 42, CALLVALUE, EQ, PUSH1, 8, JUMPI, PC, JUMPDEST])
         self.assertFalse(r)
 
         def true_state(state):
@@ -399,8 +390,7 @@ class TestInstructions(unittest.TestCase):
             self.sm.exec_branch(self.state)
             try:
                 self.assert_stack([7])
-                self.assertEqual(self.state.solver.min(
-                    self.state.env.value), 0)
+                self.assertEqual(self.state.solver.min(self.state.env.value), 0)
             except AssertionError:
                 return False
             return True
@@ -410,8 +400,7 @@ class TestInstructions(unittest.TestCase):
             self.sm.exec_branch(self.state)
             try:
                 self.assert_stack([])
-                self.assertEqual(self.state.solver.min(
-                    self.state.env.value), 1337)
+                self.assertEqual(self.state.solver.min(self.state.env.value), 1337)
             except AssertionError:
                 return False
             return True
@@ -464,8 +453,7 @@ class TestInstructions(unittest.TestCase):
         )
 
     def test_sha3_a_mstore8(self):
-        self.run_code([PUSH1, 0x61, PUSH1, 0, MSTORE8,
-                      PUSH1, 1, PUSH1, 0, SHA3])
+        self.run_code([PUSH1, 0x61, PUSH1, 0, MSTORE8, PUSH1, 1, PUSH1, 0, SHA3])
         self.assertEqual(1, len(self.state.stack))
         (sha3,) = self.state.solver.eval(self.state.stack[0], 1)
         self.assertEqual(
@@ -475,8 +463,7 @@ class TestInstructions(unittest.TestCase):
         )
 
     def test_sha3_a_mstore(self):
-        self.run_code([PUSH1, 0x61, PUSH1, 0, MSTORE,
-                      PUSH1, 1, PUSH1, 31, SHA3])
+        self.run_code([PUSH1, 0x61, PUSH1, 0, MSTORE, PUSH1, 1, PUSH1, 31, SHA3])
         self.assertEqual(1, len(self.state.stack))
         (sha3,) = self.state.solver.eval(self.state.stack[0], 1)
         self.assertEqual(
@@ -521,8 +508,9 @@ class TestInstructions(unittest.TestCase):
                 MLOAD,
             ]
         )
-        self.assert_stack([self.state.env.calldata.read(
-            20, 32), self.state.env.calldata.read(52, 32)])
+        self.assert_stack(
+            [self.state.env.calldata.read(20, 32), self.state.env.calldata.read(52, 32)]
+        )
 
     def test_codesize(self):
         self.run_code([PUSH1, 0, POP, CODESIZE])
@@ -535,8 +523,9 @@ class TestInstructions(unittest.TestCase):
     def test_extcodesize_other(self):
         self.run_code([PUSH1, 42, EXTCODESIZE])
         self.assertTrue(len(self.state.stack), 1)
-        self.assertTrue(self.state.solver.satisfiable(
-            extra_constraints=[self.state.stack[0] == 0]))
+        self.assertTrue(
+            self.state.solver.satisfiable(extra_constraints=[self.state.stack[0] == 0])
+        )
         self.assertTrue(
             self.state.solver.satisfiable(
                 extra_constraints=[self.state.stack[0] == 1337]
@@ -636,18 +625,12 @@ class TestOutcomes(unittest.TestCase):
 
         self.assertEqual(len(outcome1.storage_read), 0)
         self.assertEqual(len(outcome1.storage_written), 1)
-        self.assertBEqual(
-            outcome1.storage_written[utils.bvv(0)],
-            utils.bvv(43))
+        self.assertBEqual(outcome1.storage_written[utils.bvv(0)], utils.bvv(43))
 
         self.assertEqual(len(outcome2.storage_read), 0)
         self.assertEqual(len(outcome2.storage_written), 2)
-        self.assertBEqual(
-            outcome2.storage_written[utils.bvv(0)],
-            utils.bvv(42))
-        self.assertBEqual(
-            outcome2.storage_written[outcome2.env.value],
-            utils.bvv(43))
+        self.assertBEqual(outcome2.storage_written[utils.bvv(0)], utils.bvv(42))
+        self.assertBEqual(outcome2.storage_written[outcome2.env.value], utils.bvv(43))
 
     def test_sload(self):
         (outcome,) = self.outcomes([PUSH1, 0, SLOAD, PUSH1, 0, SLOAD])

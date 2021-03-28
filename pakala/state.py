@@ -98,8 +98,7 @@ class State(object):
         derived from Env.replace(), to substitute an environment with another.
         """
         logger.debug("State.replace %s", r)
-        self.storage_written = {r(k): r(v)
-                                for k, v in self.storage_written.items()}
+        self.storage_written = {r(k): r(v) for k, v in self.storage_written.items()}
         self.storage_read = {r(k): r(v) for k, v in self.storage_read.items()}
         self.calls = [[r(i) for i in call] for call in self.calls]
         self.selfdestruct_to = (

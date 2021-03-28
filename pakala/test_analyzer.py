@@ -15,8 +15,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 class TestCheckState(unittest.TestCase):
     def setUp(self):
-        self.env = Env(b"", caller=utils.DEFAULT_CALLER,
-                       address=utils.DEFAULT_ADDRESS)
+        self.env = Env(b"", caller=utils.DEFAULT_CALLER, address=utils.DEFAULT_ADDRESS)
 
         self.state = State(self.env)
         self.analyzer = Analyzer(
@@ -74,8 +73,7 @@ class TestCheckState(unittest.TestCase):
         self.assertFalse(self.check_state(self.state))
 
     def test_send_back_more(self):
-        self.state.calls.append(self.get_call(
-            self.env.value + Web3.toWei(1, "ether")))
+        self.state.calls.append(self.get_call(self.env.value + Web3.toWei(1, "ether")))
         self.assertTrue(self.check_state(self.state))
 
     def test_send_back_if_impossible_block(self):
@@ -146,8 +144,7 @@ class TestCheckState(unittest.TestCase):
         "that doesn't contain env.value, and it should!"
     )
     def test_send_all_and_selfdestruct(self):
-        self.state.calls.append(self.get_call(
-            self.env.balance, to=self.env.caller + 1))
+        self.state.calls.append(self.get_call(self.env.balance, to=self.env.caller + 1))
         self.state.selfdestruct_to = self.env.caller
         self.assertFalse(self.check_state(self.state))
 

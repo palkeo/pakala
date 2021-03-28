@@ -72,8 +72,8 @@ parser.add_argument(
     metavar="LOG_LEVEL",
 )
 parser.add_argument(
-    "-s", "--summarize", action="store_true",
-    help="enable summarizer (EXPERIMENTAL)")
+    "-s", "--summarize", action="store_true", help="enable summarizer (EXPERIMENTAL)"
+)
 
 limits = parser.add_argument_group("time/depth limits")
 limits.add_argument(
@@ -109,9 +109,12 @@ limits.add_argument(
 
 environment = parser.add_argument_group("environment")
 environment.add_argument(
-    "-b", "--force-balance", type=ethWeiAmount,
+    "-b",
+    "--force-balance",
+    type=ethWeiAmount,
     help="Don't use the current contract balance, instead force it to a value.",
-    metavar="BALANCE",)
+    metavar="BALANCE",
+)
 environment.add_argument(
     "-B",
     "--block",
@@ -184,8 +187,7 @@ def main():
         addr = Web3.toChecksumAddress(args.contract_addr)
         code = w3.eth.getCode(addr, block_identifier=args.block)
 
-    balance = args.force_balance or w3.eth.getBalance(
-        addr, block_identifier=args.block)
+    balance = args.force_balance or w3.eth.getBalance(addr, block_identifier=args.block)
 
     print(
         "Analyzing contract at %s with balance %f ether."
@@ -204,9 +206,7 @@ def main():
             "so more of the contract can get explored. "
             "It may be slower."
         )
-        e = env.Env(
-            code, address=utils.bvv(int(addr, 16)),
-            balance=utils.bvv(balance),)
+        e = env.Env(code, address=utils.bvv(int(addr, 16)), balance=utils.bvv(balance),)
     else:
         e = env.Env(
             code,
@@ -222,8 +222,8 @@ def main():
     s.execute(timeout_sec=args.exec_timeout)
 
     print(
-        "Symbolic execution finished with coverage %i%%." %
-        int(s.get_coverage() * 100))
+        "Symbolic execution finished with coverage %i%%." % int(s.get_coverage() * 100)
+    )
     print(
         "Outcomes: %i interesting. %i total and %i unfinished paths."
         % (
@@ -247,8 +247,8 @@ def main():
         block=args.block,
     )
     bug = ra.check_states(
-        s.outcomes, timeout=args.analysis_timeout,
-        max_depth=args.max_transaction_depth)
+        s.outcomes, timeout=args.analysis_timeout, max_depth=args.max_transaction_depth
+    )
 
     if bug:
         solver = bug[2]
