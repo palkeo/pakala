@@ -1,6 +1,6 @@
 py-evm==0.3.0a19
-claripy==8.19.7.25
+claripy==8.20.1.7
 mock
-web3==5.12.1
+web3==5.11.1
 coloredlogs==10.0
-eth-utils==1.10.0
+eth-utils==1.8.1
