@@ -62,17 +62,20 @@ class HumanSummarizer:
                     if state is s and state.is_interesting():
                         flags.add("interesting")
 
-                if state.solver.satisfiable(extra_constraints=[state.env.value > 0]):
+                if state.solver.satisfiable(
+                        extra_constraints=[state.env.value > 0]):
                     all_not_payable = False
-                if state.solver.satisfiable(extra_constraints=[state.env.value == 0]):
+                if state.solver.satisfiable(
+                        extra_constraints=[state.env.value == 0]):
                     all_only_payable = False
 
                 # TODO: actually read the storage...
-                read_constraints = [v == 1 for v in state.storage_read.values()]
+                read_constraints = [
+                    v == 1 for v in state.storage_read.values()]
                 try:
                     callers = state.solver.eval(
-                        state.env.caller[159:0], 2, extra_constraints=read_constraints
-                    )
+                        state.env.caller[159: 0],
+                        2, extra_constraints=read_constraints)
                     if len(callers) == 1:
                         flags.add("onlyOwner")
                 except Exception:
@@ -85,4 +88,7 @@ class HumanSummarizer:
             if all_only_payable:
                 flags.add("onlyPayable")
 
-            print("%s %s %s" % (method, signature.ljust(40), " ".join(sorted(flags))))
+            print(
+                "%s %s %s" %
+                (method, signature.ljust(40),
+                 " ".join(sorted(flags))))

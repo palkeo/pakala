@@ -35,7 +35,8 @@ DEBUG_MARK_PATH = []
 
 
 def is_function(state, function):
-    return state.solver.satisfiable([state.env.calldata.read(0, 4) == function])
+    return state.solver.satisfiable(
+        [state.env.calldata.read(0, 4) == function])
 
 
 def with_new_env(state):
@@ -240,7 +241,8 @@ class RecursiveAnalyzer(analyzer.BaseAnalyzer):
                 logger.warning("path: %s", path)
                 breakpoint()
 
-            new_composite_states = self._append_state(initial_composite_state, path[-1])
+            new_composite_states = self._append_state(
+                initial_composite_state, path[-1])
 
             for composite_state in new_composite_states:
                 solver = self._search_path(composite_state, path)

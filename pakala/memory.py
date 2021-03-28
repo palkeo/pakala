@@ -36,7 +36,8 @@ class Memory(object):
     def read(self, addr, size):
         assert size >= 0
         if MEMORY_SIZE and addr + size >= MEMORY_SIZE:
-            raise utils.CodeError("Memory.read: memory would exceed MEMORY_SIZE")
+            raise utils.CodeError(
+                "Memory.read: memory would exceed MEMORY_SIZE")
         logger.debug("%s.read(%i, %i)" % (self.__class__.__name__, addr, size))
 
         if size == 0:
@@ -61,7 +62,9 @@ class Memory(object):
                 )
             # start inside
             elif 0 < raddr < size:
-                return self.read(addr, raddr).concat(_slice(ivalue, 0, size - raddr))
+                return self.read(
+                    addr, raddr).concat(
+                    _slice(ivalue, 0, size - raddr))
 
         assert addr not in self._mem
         self._mem[addr] = self._default(addr, size)
@@ -71,11 +74,12 @@ class Memory(object):
         assert size >= 0
         assert value.size() // 8 == size, "BVV size doesn't match size in Memory.write"
         if MEMORY_SIZE and addr + size >= MEMORY_SIZE:
-            raise utils.CodeError("Memory.write: memory would exceed MEMORY_SIZE")
+            raise utils.CodeError(
+                "Memory.write: memory would exceed MEMORY_SIZE")
 
         logger.debug(
-            "%s.write(%i, %i, %r)" % (self.__class__.__name__, addr, size, value)
-        )
+            "%s.write(%i, %i, %r)" %
+            (self.__class__.__name__, addr, size, value))
 
         if size == 0:
             return
@@ -92,7 +96,8 @@ class Memory(object):
                 if raddr < 0:
                     self._mem[iaddr] = _slice(ivalue, 0, -raddr)
                 if rend > size:
-                    self._mem[addr + size] = _slice(ivalue, -raddr + size, None)
+                    self._mem[addr + size] = _slice(
+                        ivalue, -raddr + size, None)
             # completely inside (not strictly)
             elif raddr >= 0 and rend <= size:
                 del self._mem[iaddr]
@@ -109,12 +114,13 @@ class Memory(object):
     def copy_from(self, other, start_self, start_other, size):
         assert size >= 0
         if MEMORY_SIZE and (
-            start_self + size >= MEMORY_SIZE or start_other + size >= MEMORY_SIZE
-        ):
-            raise utils.CodeError("Memory.copy_from: memory would exceed MEMORY_SIZE")
+                start_self + size >= MEMORY_SIZE or start_other + size >= MEMORY_SIZE):
+            raise utils.CodeError(
+                "Memory.copy_from: memory would exceed MEMORY_SIZE")
         if size == 0:
             return
-        self.write(start_self, size, CalldataMemoryView(other, start_other, size))
+        self.write(start_self, size, CalldataMemoryView(
+            other, start_other, size))
 
     def size(self):
         if not self._mem:

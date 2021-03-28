@@ -51,17 +51,19 @@ class TestWithNewEnv(unittest.TestCase):
 
             self.assertIsNot(state.env.value, new_state.env.value)
             self.assertIsNot(
-                state.storage_read[utils.bvv(0)], new_state.storage_read[utils.bvv(0)]
-            )
+                state.storage_read[utils.bvv(0)],
+                new_state.storage_read[utils.bvv(0)])
             self.assertIsNot(
-                state.storage_read[utils.bvv(1)], new_state.storage_read[utils.bvv(1)]
-            )
+                state.storage_read[utils.bvv(1)],
+                new_state.storage_read[utils.bvv(1)])
             self.assertIsNot(
-                state.storage_read[utils.bvv(2)], new_state.storage_read[utils.bvv(2)]
-            )
+                state.storage_read[utils.bvv(2)],
+                new_state.storage_read[utils.bvv(2)])
 
-            self.assertNotEqual(new_state.solver.eval(state.calls[0][1], 2), (42,))
-            self.assertEqual(new_state.solver.eval(new_state.calls[0][1], 2), (42,))
+            self.assertNotEqual(new_state.solver.eval(
+                state.calls[0][1], 2), (42,))
+            self.assertEqual(new_state.solver.eval(
+                new_state.calls[0][1], 2), (42,))
 
 
 class TestCheckStates(unittest.TestCase):
@@ -72,7 +74,8 @@ class TestCheckStates(unittest.TestCase):
     """
 
     def setUp(self):
-        self.env = Env(b"", caller=utils.DEFAULT_CALLER, address=utils.DEFAULT_ADDRESS)
+        self.env = Env(b"", caller=utils.DEFAULT_CALLER,
+                       address=utils.DEFAULT_ADDRESS)
 
     def check_states(self, states, mock_storage=None):
         self.analyzer = RecursiveAnalyzer(
@@ -117,7 +120,8 @@ class TestCheckStates(unittest.TestCase):
         state = State(self.env)
 
         state_write = state.copy()
-        state_write.storage_written = {utils.bvv(0): self.env.calldata.read(4, 32)}
+        state_write.storage_written = {
+            utils.bvv(0): self.env.calldata.read(4, 32)}
 
         state_selfdestruct = state.copy()
         state_selfdestruct.selfdestruct_to = self.env.calldata.read(4, 32)
@@ -127,9 +131,12 @@ class TestCheckStates(unittest.TestCase):
 
         storage = {0: 0xBAD1DEA}
         self.assertTrue(
-            self.check_states([state_write, state_selfdestruct], mock_storage=storage)
-        )
-        self.assertFalse(self.check_states([state_selfdestruct], mock_storage=storage))
+            self.check_states(
+                [state_write, state_selfdestruct],
+                mock_storage=storage))
+        self.assertFalse(self.check_states(
+            [state_selfdestruct],
+            mock_storage=storage))
         self.assertFalse(self.check_states([state_write]))
 
     def test_sha3_key(self):
@@ -155,9 +162,12 @@ class TestCheckStates(unittest.TestCase):
             55186156870478567193644641351382124067713781048612400765092754877653207859685: 0
         }
         self.assertTrue(
-            self.check_states([state_write, state_selfdestruct], mock_storage=storage)
-        )
-        self.assertFalse(self.check_states([state_selfdestruct], mock_storage=storage))
+            self.check_states(
+                [state_write, state_selfdestruct],
+                mock_storage=storage))
+        self.assertFalse(self.check_states(
+            [state_selfdestruct],
+            mock_storage=storage))
         self.assertFalse(self.check_states([state_write]))
 
     def test_sha3_value1(self):
@@ -179,10 +189,14 @@ class TestCheckStates(unittest.TestCase):
 
         storage = {0: 0}
         self.assertTrue(
-            self.check_states([state_write, state_selfdestruct], mock_storage=storage)
-        )
-        self.assertFalse(self.check_states([state_selfdestruct], mock_storage=storage))
-        self.assertFalse(self.check_states([state_write], mock_storage=storage))
+            self.check_states(
+                [state_write, state_selfdestruct],
+                mock_storage=storage))
+        self.assertFalse(self.check_states(
+            [state_selfdestruct],
+            mock_storage=storage))
+        self.assertFalse(self.check_states(
+            [state_write], mock_storage=storage))
 
     def test_sha3_value2(self):
         """Same as above, but we need to pass the computed SHA3."""
@@ -197,21 +211,27 @@ class TestCheckStates(unittest.TestCase):
         state_selfdestruct.selfdestruct_to = self.env.calldata.read(36, 32)
         storage_input = claripy.BVS("storage[0]", 256)
         state_selfdestruct.storage_read = {utils.bvv(0): storage_input}
-        state_selfdestruct.solver.add(storage_input == self.env.calldata.read(4, 32))
+        state_selfdestruct.solver.add(
+            storage_input == self.env.calldata.read(4, 32))
         state_selfdestruct.solver.add(storage_input != 0)
 
         storage = {0: 0}
         self.assertTrue(
-            self.check_states([state_write, state_selfdestruct], mock_storage=storage)
-        )
-        self.assertFalse(self.check_states([state_selfdestruct], mock_storage=storage))
-        self.assertFalse(self.check_states([state_write], mock_storage=storage))
+            self.check_states(
+                [state_write, state_selfdestruct],
+                mock_storage=storage))
+        self.assertFalse(self.check_states(
+            [state_selfdestruct],
+            mock_storage=storage))
+        self.assertFalse(self.check_states(
+            [state_write], mock_storage=storage))
 
     def test_write_write_and_selfdestruct(self):
         state = State(self.env)
         # Anybody can set owner
         state_write1 = state.copy()
-        state_write1.storage_written = {utils.bvv(0): self.env.calldata.read(4, 32)}
+        state_write1.storage_written = {
+            utils.bvv(0): self.env.calldata.read(4, 32)}
 
         # Onlyowner: set a magic constant allowing the selfdestruct bug, at an
         # user-controlled storage key.
@@ -227,7 +247,8 @@ class TestCheckStates(unittest.TestCase):
         state_selfdestruct = state.copy()
         read_0 = claripy.BVS("storage[0]", 256)
         read_40 = claripy.BVS("storage[4]", 256)
-        state_selfdestruct.storage_read = {utils.bvv(0): read_0, utils.bvv(40): read_40}
+        state_selfdestruct.storage_read = {
+            utils.bvv(0): read_0, utils.bvv(40): read_40}
         state_selfdestruct.solver.add(self.env.caller == read_0)
         state_selfdestruct.solver.add(read_40 == 1337)
         state_selfdestruct.selfdestruct_to = self.env.caller
@@ -259,11 +280,14 @@ class TestCheckStates(unittest.TestCase):
 
         # storage[0] is still 0 ETH initially, but we have an arbitrary write now
         state_write = state.copy()
-        state_write.storage_written = {utils.bvv(0): self.env.calldata.read(4, 32)}
+        state_write.storage_written = {
+            utils.bvv(0): self.env.calldata.read(4, 32)}
         state_write.solver.add(self.env.calldata.read(0, 4) == 0x1337)
-        state_write.solver.add(self.env.calldata.read(4, 32) < Web3.toWei(1, "ether"))
+        state_write.solver.add(self.env.calldata.read(
+            4, 32) < Web3.toWei(1, "ether"))
 
-        self.assertFalse(self.check_states([state_write], mock_storage=storage))
+        self.assertFalse(self.check_states(
+            [state_write], mock_storage=storage))
         self.assertTrue(
             self.check_states([state_send, state_write], mock_storage=storage)
         )
@@ -275,21 +299,22 @@ class TestCheckStates(unittest.TestCase):
         state_write_0 = state_write.copy()
         state_write_0.solver.add(self.env.calldata.read(4, 32) == 1)
         self.assertFalse(
-            self.check_states([state_write_0, state_send], mock_storage=storage)
-        )
+            self.check_states(
+                [state_write_0, state_send],
+                mock_storage=storage))
 
         # ...arbitrary write only if the block timestamp is <10, which is impossible.
         state_write_ts = state_write.copy()
         state_write_ts.solver.add(self.env.block_timestamp < 10)
         self.assertFalse(
-            self.check_states([state_write_ts, state_send], mock_storage=storage)
-        )
+            self.check_states(
+                [state_write_ts, state_send],
+                mock_storage=storage))
 
         self.assertFalse(
             self.check_states(
-                [state_write_0, state_send, state_write_ts], mock_storage=storage
-            )
-        )
+                [state_write_0, state_send, state_write_ts],
+                mock_storage=storage))
 
         # now we put all these state_write* together, so there is a solution.
         self.assertTrue(
@@ -334,21 +359,28 @@ class TestCheckStates(unittest.TestCase):
         state_send.solver.add(k_a != k_b)
 
         self.assertFalse(self.check_states([state_send], mock_storage=storage))
-        self.assertFalse(self.check_states([state_write], mock_storage=storage))
+        self.assertFalse(self.check_states(
+            [state_write], mock_storage=storage))
 
         # Now we have to first write, then send.
-        bug = self.check_states([state_send, state_write], mock_storage=storage)
+        bug = self.check_states(
+            [state_send, state_write],
+            mock_storage=storage)
         self.assertTrue(bug)
         self.assertEqual(len(bug[1]), 2)
 
         # If we force k_a to be != 10, we can use k_b == 10 instead.
         state_send.solver.add(k_a != 10)
-        bug = self.check_states([state_send, state_write], mock_storage=storage)
+        bug = self.check_states(
+            [state_send, state_write],
+            mock_storage=storage)
         self.assertTrue(bug)
         self.assertEqual(len(bug[1]), 2)
 
         # If we force both, it's impossible and we have to do two writes.
         state_send.solver.add(k_b != 10)
-        bug = self.check_states([state_send, state_write], mock_storage=storage)
+        bug = self.check_states(
+            [state_send, state_write],
+            mock_storage=storage)
         self.assertTrue(bug)
         self.assertEqual(len(bug[1]), 3)

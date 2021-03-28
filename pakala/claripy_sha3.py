@@ -30,7 +30,8 @@ def _symbolize_hashes(ast, hashes):
         except KeyError:
             hash_symbol = claripy.BVS("SHA3", 256)
             hashes[hash_input] = hash_symbol
-            logger.debug("Registering new hash: %s(%s)", hash_symbol, hash_input)
+            logger.debug("Registering new hash: %s(%s)",
+                         hash_symbol, hash_input)
             return hash_symbol
 
     # Recursively apply to children
@@ -85,7 +86,9 @@ class Solver:
         self.hashes = hashes or {}  # Mapping hash input to the symbol
 
     def branch(self):
-        return Solver(claripy_solver=self.solver.branch(), hashes=self.hashes.copy())
+        return Solver(
+            claripy_solver=self.solver.branch(),
+            hashes=self.hashes.copy())
 
     def add(self, constraints, **kwargs):
         if isinstance(constraints, claripy.ast.base.Base):
@@ -110,7 +113,8 @@ class Solver:
         assert _no_sha3_symbols(extra_constraints)
         hashes = self.hashes.copy()
         e = _symbolize_hashes(e, hashes)
-        extra_constraints = self._hash_constraints(extra_constraints, hashes=hashes)
+        extra_constraints = self._hash_constraints(
+            extra_constraints, hashes=hashes)
         return self.solver.eval(e, n, extra_constraints=extra_constraints)
 
     def batch_eval(self, e, n, extra_constraints=(), **kwargs):
@@ -121,7 +125,8 @@ class Solver:
         assert _no_sha3_symbols(extra_constraints)
         hashes = self.hashes.copy()
         e = _symbolize_hashes(e, hashes)
-        extra_constraints = self._hash_constraints(extra_constraints, hashes=hashes)
+        extra_constraints = self._hash_constraints(
+            extra_constraints, hashes=hashes)
         return self.solver.max(e, extra_constraints=extra_constraints)
 
     def min(self, e, extra_constraints=(), **kwargs):
@@ -129,7 +134,8 @@ class Solver:
         assert _no_sha3_symbols(extra_constraints)
         hashes = self.hashes.copy()
         e = _symbolize_hashes(e, hashes)
-        extra_constraints = self._hash_constraints(extra_constraints, hashes=hashes)
+        extra_constraints = self._hash_constraints(
+            extra_constraints, hashes=hashes)
         return self.solver.min(e, extra_constraints=extra_constraints)
 
     def solution(self, e, v, extra_constraints=(), **kwargs):
@@ -137,11 +143,13 @@ class Solver:
         assert _no_sha3_symbols(extra_constraints)
         hashes = self.hashes.copy()
         e = _symbolize_hashes(e, hashes)
-        extra_constraints = self._hash_constraints(extra_constraints, hashes=hashes)
+        extra_constraints = self._hash_constraints(
+            extra_constraints, hashes=hashes)
         return self.solver.solution(e, v, extra_constraints=extra_constraints)
 
     def _hash_constraints(self, extra_constraints, hashes, pairs_done=None):
-        extra_constraints = [_symbolize_hashes(c, hashes) for c in extra_constraints]
+        extra_constraints = [_symbolize_hashes(
+            c, hashes) for c in extra_constraints]
 
         # Fast-path if no hashes, or if not satisfiable.
         if not hashes or not self.solver.satisfiable(
@@ -183,13 +191,15 @@ class Solver:
                 pairs_done.add((s2, s1))
 
         if constraint_added:
-            return self._hash_constraints(extra_constraints, hashes, pairs_done)
+            return self._hash_constraints(
+                extra_constraints, hashes, pairs_done)
 
         assert self.solver.satisfiable(extra_constraints=extra_constraints)
 
         # We need to first concretize the hashes that are the "deepest", i.e. that
         # are serving as input for other hashes.
-        hash_depth = {symbol: _hash_depth(hashes, symbol) for symbol in hashes.values()}
+        hash_depth = {symbol: _hash_depth(hashes, symbol)
+                      for symbol in hashes.values()}
         for in1, s1 in sorted(
             hashes.items(), key=lambda i: hash_depth[i[1]], reverse=True
         ):
@@ -227,7 +237,8 @@ class Solver:
         # from it. In that case the hashes symbols need to be different! So we
         # can use that function and call replace() on all the symbols to use
         # new hash symbols everywhere.
-        new_hashes = {k: claripy.BVS("SHA3", 256) for k, v in self.hashes.items()}
+        new_hashes = {k: claripy.BVS("SHA3", 256)
+                      for k, v in self.hashes.items()}
 
         def r(ast):
             for in_ in self.hashes:

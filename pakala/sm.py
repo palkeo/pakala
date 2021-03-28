@@ -60,7 +60,8 @@ class SymbolicMachine:
 
     def __init__(self, env, fuzz=True):
         self.code = env.code
-        logger.debug("Initializing symbolic machine with source code: %s", self.code)
+        logger.debug(
+            "Initializing symbolic machine with source code: %s", self.code)
         # For use by heapq only. Contains couples (score, state).
         self.branch_queue = []
         self.states_seen = set()
@@ -130,7 +131,9 @@ class SymbolicMachine:
         to_try = set()
         nb_random = 0
         for t in tries:  # pylint:disable=invalid-name
-            if isinstance(t, numbers.Number) and state.solver.solution(variable, t):
+            if isinstance(
+                    t, numbers.Number) and state.solver.solution(
+                    variable, t):
                 to_try.add(t)
             elif t is min:
                 to_try.add(state.solver.min(variable))
@@ -159,10 +162,11 @@ class SymbolicMachine:
             solutions = state.solver.eval(variable, 2)
             if len(solutions) > 1:
                 raise MultipleSolutionsError(
-                    "Multiple solutions for %s (%#x)" % (variable, self.code[state.pc])
-                )
+                    "Multiple solutions for %s (%#x)" %
+                    (variable, self.code[state.pc]))
             solution = solutions[0]
-            return solution if isinstance(solution, numbers.Number) else solution.value
+            return solution if isinstance(
+                solution, numbers.Number) else solution.value
 
         while True:
             if state.pc >= len(self.code):
@@ -267,7 +271,8 @@ class SymbolicMachine:
                 try:
                     s2 = solution(s2)
                 except MultipleSolutionsError:
-                    state.stack_push(claripy.If(s2 == 0, BVV_0, (s0 + s1) % s2))
+                    state.stack_push(
+                        claripy.If(s2 == 0, BVV_0, (s0 + s1) % s2))
                 else:
                     state.stack_push(BVV_0 if s2 == 0 else (s0 + s1) % s2)
             elif op == opcode_values.MULMOD:
@@ -275,7 +280,8 @@ class SymbolicMachine:
                 try:
                     s2 = solution(s2)
                 except MultipleSolutionsError:
-                    state.stack_push(claripy.If(s2 == 0, BVV_0, (s0 * s1) % s2))
+                    state.stack_push(
+                        claripy.If(s2 == 0, BVV_0, (s0 * s1) % s2))
                 else:
                     state.stack_push(BVV_0 if s2 == 0 else (s0 * s1) % s2)
             elif op == opcode_values.SHL:
@@ -298,10 +304,12 @@ class SymbolicMachine:
                     except MultipleSolutionsError:
                         state.stack_push(exponent)  # restore stack
                         state.stack_push(base)
-                        self.add_for_fuzzing(state, exponent, EXP_EXPONENT_FUZZ)
+                        self.add_for_fuzzing(
+                            state, exponent, EXP_EXPONENT_FUZZ)
                         return False
                     else:
-                        state.stack_push(claripy.BVV(base_sol ** exponent_sol, 256))
+                        state.stack_push(claripy.BVV(
+                            base_sol ** exponent_sol, 256))
             elif op == opcode_values.LT:
                 s0, s1 = (
                     state.stack_pop(),
@@ -366,7 +374,8 @@ class SymbolicMachine:
                     state.stack_pop(),
                     state.stack_pop(),
                 )  # pylint:disable=invalid-name
-                state.stack_push(s1.LShR(claripy.If(s0 > 31, 32, 31 - s0) * 8) & 0xFF)
+                state.stack_push(
+                    s1.LShR(claripy.If(s0 > 31, 32, 31 - s0) * 8) & 0xFF)
 
             elif op == opcode_values.PC:
                 state.stack_push(bvv(state.pc))
@@ -410,13 +419,15 @@ class SymbolicMachine:
                 state.stack_pop()
             elif op == opcode_values.JUMP:
                 addr = solution(state.stack_pop())
-                if addr >= len(self.code) or self.code[addr] != opcode_values.JUMPDEST:
+                if addr >= len(
+                        self.code) or self.code[addr] != opcode_values.JUMPDEST:
                     raise utils.CodeError("Invalid jump (%i)" % addr)
                 state.pc = addr
                 self.add_branch(state)
                 return False
             elif op == opcode_values.JUMPI:
-                addr, condition = solution(state.stack_pop()), state.stack_pop()
+                addr, condition = solution(
+                    state.stack_pop()), state.stack_pop()
                 state_false = state.copy()
                 state.solver.add(condition != BVV_0)
                 state_false.solver.add(condition == BVV_0)
@@ -435,7 +446,8 @@ class SymbolicMachine:
                 self.code.program_counter = state.pc + 1
                 raw_value = self.code.read(pushnum)
                 state.pc += pushnum
-                state.stack_push(bvv(int.from_bytes(raw_value, byteorder="big")))
+                state.stack_push(
+                    bvv(int.from_bytes(raw_value, byteorder="big")))
             elif opcode_values.DUP1 <= op <= opcode_values.DUP16:
                 depth = op - opcode_values.DUP1 + 1
                 state.stack_push(state.stack[-depth])
@@ -449,7 +461,9 @@ class SymbolicMachine:
                 mstart, msz = (state.stack_pop(), state.stack_pop())
                 topics = [state.stack_pop() for x in range(depth)]
             elif op == opcode_values.SHA3:
-                start, length = solution(state.stack_pop()), solution(state.stack_pop())
+                start, length = solution(
+                    state.stack_pop()), solution(
+                    state.stack_pop())
                 memory = state.memory.read(start, length)
                 state.stack_push(Sha3(memory))
             elif op == opcode_values.STOP:
@@ -479,9 +493,11 @@ class SymbolicMachine:
                 try:
                     size = solution(size)
                 except MultipleSolutionsError:
-                    self.add_for_fuzzing(old_state, size, CALLDATACOPY_SIZE_FUZZ)
+                    self.add_for_fuzzing(
+                        old_state, size, CALLDATACOPY_SIZE_FUZZ)
                     return False
-                state.memory.copy_from(state.env.calldata, mstart, dstart, size)
+                state.memory.copy_from(
+                    state.env.calldata, mstart, dstart, size)
             elif op == opcode_values.CODESIZE:
                 state.stack_push(bvv(len(self.code)))
             elif op == opcode_values.EXTCODESIZE:
@@ -490,7 +506,8 @@ class SymbolicMachine:
                     state.stack_push(bvv(len(self.code)))
                 else:
                     # TODO: Improve that... It's clearly not constraining enough.
-                    state.stack_push(claripy.BVS("EXTCODESIZE[%s]" % addr, 256))
+                    state.stack_push(claripy.BVS(
+                        "EXTCODESIZE[%s]" % addr, 256))
 
             elif op == opcode_values.EXTCODECOPY:
                 old_state = state.copy()
@@ -506,11 +523,10 @@ class SymbolicMachine:
                     # self.add_for_fuzzing(old_state, size, [])
                     # return False
                     raise
-                state.memory.write(
-                    mem_start,
-                    size,
-                    claripy.BVS("EXTCODE[%s from %s]" % (addr, code_start), size * 8),
-                )
+                state.memory.write(mem_start, size, claripy.BVS(
+                    "EXTCODE[%s from %s]" %
+                    (addr, code_start),
+                    size * 8),)
 
             elif op == opcode_values.CODECOPY:
                 mem_start, code_start, size = [
@@ -543,7 +559,8 @@ class SymbolicMachine:
                 key = state.stack_pop()
                 for w_key, w_value in state.storage_written.items():
                     read_written = [w_key == key]
-                    if state.solver.satisfiable(extra_constraints=read_written):
+                    if state.solver.satisfiable(
+                            extra_constraints=read_written):
                         new_state = state.copy()
                         new_state.solver.add(read_written)
                         new_state.stack_push(w_value)
@@ -552,7 +569,8 @@ class SymbolicMachine:
                 if state.solver.satisfiable():
                     assert key not in state.storage_written
                     if key not in state.storage_read:
-                        state.storage_read[key] = claripy.BVS("storage[%s]" % key, 256)
+                        state.storage_read[key] = claripy.BVS(
+                            "storage[%s]" % key, 256)
                     state.stack_push(state.storage_read[key])
                     self.add_branch(state)
                 return
@@ -563,7 +581,8 @@ class SymbolicMachine:
                 value = state.stack_pop()
                 for w_key, w_value in state.storage_written.items():
                     read_written = [w_key == key]
-                    if state.solver.satisfiable(extra_constraints=read_written):
+                    if state.solver.satisfiable(
+                            extra_constraints=read_written):
                         new_state = state.copy()
                         new_state.solver.add(read_written)
                         new_state.storage_written[w_key] = value
@@ -639,11 +658,8 @@ class SymbolicMachine:
                 memoutsz = solution(memoutsz)
                 if memoutsz != 0:
                     memoutstart = solution(memoutstart)
-                    state.memory.write(
-                        memoutstart,
-                        memoutsz,
-                        claripy.BVS("DELEGATECALL_RETURN[%s]" % to_, memoutsz * 8),
-                    )
+                    state.memory.write(memoutstart, memoutsz, claripy.BVS(
+                        "DELEGATECALL_RETURN[%s]" % to_, memoutsz * 8), )
 
                 state.stack_push(BVV_1)
                 self.add_branch(state)
@@ -661,12 +677,13 @@ class SymbolicMachine:
                 try:
                     size = solution(size)
                 except MultipleSolutionsError:
-                    self.add_for_fuzzing(old_state, size, RETURNDATACOPY_SIZE_FUZZ)
+                    self.add_for_fuzzing(
+                        old_state, size, RETURNDATACOPY_SIZE_FUZZ)
                     return False
 
                 state.memory.write(
-                    mem_start_position, size, claripy.BVS("RETURNDATACOPY", size * 8)
-                )
+                    mem_start_position, size, claripy.BVS(
+                        "RETURNDATACOPY", size * 8))
 
             elif op == opcode_values.SELFDESTRUCT:
                 state.selfdestruct_to = state.stack[-1]
@@ -721,7 +738,8 @@ class SymbolicMachine:
             depth, state = heapq.heappop(self.branch_queue)
             state.depth += 1
 
-            logger.debug("Executing branch at %i with depth %i.", state.pc, depth)
+            logger.debug("Executing branch at %i with depth %i.",
+                         state.pc, depth)
             try:
                 success = self.exec_branch(state)
             except KeyboardInterrupt:
@@ -754,15 +772,14 @@ class SymbolicMachine:
 
         logger.info(
             "Analysis finished with %i outcomes (%i interesting, %i unfinished), "
-            "coverage is %i%%",
-            len(self.outcomes),
+            "coverage is %i%%", len(self.outcomes),
             sum(int(o.is_interesting()) for o in self.outcomes),
             len(self.partial_outcomes),
-            int(self.get_coverage() * 100),
-        )
+            int(self.get_coverage() * 100),)
 
         if self.code_errors:
-            logger.info("Code errors encountered: %s", self.code_errors.most_common())
+            logger.info("Code errors encountered: %s",
+                        self.code_errors.most_common())
         if self.interpreter_errors:
             logger.info(
                 "Interpreter errors encountered: %s",
@@ -792,7 +809,8 @@ class SymbolicMachine:
         total_lines = 0
         covered_lines = 0
         self.code.program_counter = 0
-        for pc, instruction in enumerate(self.code):  # pylint:disable=invalid-name
+        for pc, instruction in enumerate(
+                self.code):  # pylint:disable=invalid-name
             if pc == len(self.code):
                 break
             if not self.code.is_valid_opcode(pc):
