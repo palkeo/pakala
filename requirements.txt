@@ -3,4 +3,4 @@ claripy==8.20.1.7
 mock
 web3==5.11.1
 coloredlogs==10.0
-eth-utils==1.8.1
+eth-utils==1.9.4
